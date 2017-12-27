@@ -118,26 +118,15 @@ namespace ExpressionPlayground
                     methodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
 
-                var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate);
-
-                var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentNames);
-
-                foreach (var parameterInfo in parameterInfoArray)
+                if (parameterInfoArray.Length > 0)
                 {
-                    var parameterType = parameterInfo.ParameterType;
-
-                    var index = Array.IndexOf(genericArgumentArray, parameterType);
-                    if (index != -1)
-                    {
-                        parameterType = closureGenericArguments[index];
-                    }
-
-                    closureTypeBuilder.DefineField(parameterInfo.Name, parameterType, FieldAttributes.Public);
+                    var closureType = CreateClosureType(typeBuilder, methodInfo, genericArgumentArray, genericArgumentNames, parameterInfoArray);
+                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType);
                 }
-
-                var closureType = closureTypeBuilder.CreateType();
-
-                this.EmitInvokeMethod(methodInfo, methodBuilder, innerInstanceFieldInfo);
+                else
+                {
+                    this.EmitMethodImplementationWithoutParameters(methodInfo, methodBuilder, innerInstanceFieldInfo);
+                }
 
                 // Since we're implementing an interface
                 typeBuilder.DefineMethodOverride(methodBuilder, methodInfo);
@@ -146,15 +135,52 @@ namespace ExpressionPlayground
             return usedNames;
         }
 
-        private void EmitAndStoreGetTypeFromHandle(ILGenerator ilGenerator, Type type, OpCode storeCode)
+        private static Type CreateClosureType(
+            TypeBuilder typeBuilder,
+            MethodInfo methodInfo,
+            Type[] genericArgumentArray,
+            string[] genericArgumentNames,
+            ParameterInfo[] parameterInfoArray)
         {
-            //C#: Type.GetTypeFromHandle(interfaceType)
-            ilGenerator.Emit(OpCodes.Ldtoken, type);
-            ilGenerator.EmitCall(OpCodes.Call, getTypeFromHandleMethodInfo, null);
-            ilGenerator.Emit(storeCode);
+            var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate | TypeAttributes.Sealed);
+
+            var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentNames);
+
+            foreach (var parameterInfo in parameterInfoArray)
+            {
+                var parameterType = parameterInfo.ParameterType;
+
+                var index = Array.IndexOf(genericArgumentArray, parameterType);
+                if (index != -1)
+                {
+                    parameterType = closureGenericArguments[index];
+                }
+
+                closureTypeBuilder.DefineField(parameterInfo.Name, parameterType, FieldAttributes.Public);
+            }
+
+            var closureType = closureTypeBuilder.CreateType();
+            return closureType;
         }
 
-        private void EmitInvokeMethod(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo)
+        private void EmitMethodImplementationWithoutParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo)
+        {
+            var generator = mb.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0); // this
+            generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
+
+            var parameters = mi.GetParameters();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldarg, i + 1); // parameter x
+            }
+
+            generator.EmitCall(OpCodes.Callvirt, mi, null); // call the inner method
+            generator.Emit(OpCodes.Ret);
+        }
+
+        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType)
         {
             var generator = mb.GetILGenerator();
 

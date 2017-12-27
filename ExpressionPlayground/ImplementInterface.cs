@@ -106,6 +106,8 @@ namespace ExpressionPlayground
 
                 usedNames = usedNames.Add(nameWithParams);
 
+                var genericArgumentNames = genericArgumentArray.Select(pi => pi.Name).ToArray();
+
                 var methodBuilder = typeBuilder.DefineMethod(
                     methodInfo.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
@@ -113,8 +115,27 @@ namespace ExpressionPlayground
                     parameterInfoArray.Select(pi => pi.ParameterType).ToArray());
                 if (genericArgumentArray.Any())
                 {
-                    methodBuilder.DefineGenericParameters(genericArgumentArray.Select(s => s.Name).ToArray());
+                    methodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
+
+                var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate);
+
+                var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentNames);
+
+                foreach (var parameterInfo in parameterInfoArray)
+                {
+                    var parameterType = parameterInfo.ParameterType;
+
+                    var index = Array.IndexOf(genericArgumentArray, parameterType);
+                    if (index != -1)
+                    {
+                        parameterType = closureGenericArguments[index];
+                    }
+
+                    closureTypeBuilder.DefineField(parameterInfo.Name, parameterType, FieldAttributes.Public);
+                }
+
+                var closureType = closureTypeBuilder.CreateType();
 
                 this.EmitInvokeMethod(methodInfo, methodBuilder, innerInstanceFieldInfo);
 

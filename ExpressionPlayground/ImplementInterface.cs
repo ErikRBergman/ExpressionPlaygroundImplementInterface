@@ -106,25 +106,22 @@ namespace ExpressionPlayground
 
                 usedNames = usedNames.Add(nameWithParams);
 
-                var genericArgumentNames = genericArgumentArray.Select(pi => pi.Name).ToArray();
-
                 var methodBuilder = typeBuilder.DefineMethod(
                     methodInfo.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     methodInfo.ReturnType,
                     parameterInfoArray.Select(pi => pi.ParameterType).ToArray());
 
-                GenericTypeParameterBuilder[] methodGenericParameters = Array.Empty<GenericTypeParameterBuilder>();
-
                 if (genericArgumentArray.Any())
                 {
-                    methodGenericParameters = methodBuilder.DefineGenericParameters(genericArgumentNames);
+                   var genericArgumentNames = genericArgumentArray.Select(pi => pi.Name).ToArray();
+                    methodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
 
                 if (parameterInfoArray.Length > 0)
                 {
-                    var closureType = CreateClosureType(this.moduleBuilder, typeBuilder, methodInfo, genericArgumentArray, genericArgumentNames, parameterInfoArray);
-                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType, methodGenericParameters);
+                    var closureType = CreateClosureType(this.moduleBuilder, methodInfo);
+                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType);
                 }
                 else
                 {
@@ -140,17 +137,16 @@ namespace ExpressionPlayground
 
         private static Type CreateClosureType(
             ModuleBuilder moduleBuilder,
-            TypeBuilder typeBuilder,
-            MethodInfo methodInfo,
-            Type[] genericArgumentArray,
-            string[] genericArgumentNames,
-            ParameterInfo[] parameterInfoArray)
+            MethodInfo sourceMethodInfo)
         {
             //var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate | TypeAttributes.Sealed);
 
-            var closureTypeBuilder = moduleBuilder.DefineType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.Public | TypeAttributes.Sealed);
+            ParameterInfo[] parameterInfoArray = sourceMethodInfo.GetParameters();
 
-            var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentNames);
+            var closureTypeBuilder = moduleBuilder.DefineType(sourceMethodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.Public | TypeAttributes.Sealed);
+
+            var genericArgumentArray = sourceMethodInfo.GetGenericArguments();
+            var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentArray.Select(ga => ga.Name).ToArray());
 
             foreach (var parameterInfo in parameterInfoArray)
             {
@@ -189,32 +185,42 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
-        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType, GenericTypeParameterBuilder[] genericArgumentArray)
+        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType)
         {
             var generator = mb.GetILGenerator();
 
             // Create and populate the closure
-
             Type closureFinalType = closureType;
 
-            var genericArgumentArray1 = mi.GetGenericArguments();
+            var genericArguments = mi.GetGenericArguments();
 
-            if (genericArgumentArray1 != null && genericArgumentArray1.Length > 0)
+            if (genericArguments.Length > 0)
             {
-                closureFinalType = closureType.MakeGenericType(genericArgumentArray1);
+                closureFinalType = closureType.MakeGenericType(genericArguments);
             }
 
             var closureVariable = generator.DeclareLocal(closureFinalType);
-            var constructors = closureFinalType.GetConstructors();   
+            var closureConstructor = closureFinalType.GetConstructors().Single();   
 
-            generator.Emit(OpCodes.Newobj, constructors[0]);
+            generator.Emit(OpCodes.Newobj, closureConstructor);
             generator.Emit(OpCodes.Stloc, closureVariable);
+
+            // Populate the closure
+            var parameters = mi.GetParameters();
+
+            var closureFields = closureFinalType.GetFields();
+            
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldloc_0);
+                generator.Emit(OpCodes.Ldarg, i + 1); // argument i+1 (0 is this.)
+                generator.Emit(OpCodes.Stfld, closureFields[i]);
+            }
 
             // Call the inner method
             generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
             generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
 
-            var parameters = mi.GetParameters();
             for (int i = 0; i < parameters.Length; i++)
             {
                 generator.Emit(OpCodes.Ldarg, i + 1); // parameter x

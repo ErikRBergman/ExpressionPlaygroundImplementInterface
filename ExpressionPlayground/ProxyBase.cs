@@ -1,57 +1,59 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-
-public class ProxyBase<TInterface>
+﻿namespace ExpressionPlayground
 {
-    protected readonly TInterface inner;
+    using System;
+    using System.Threading.Tasks;
 
-    public ProxyBase(TInterface inner)
+    public class ProxyBase<TInterface>
     {
-        this.inner = inner;
-    }
+        protected readonly TInterface inner;
 
-    protected async Task ExecuteAsync(Func<TInterface, Task> func)
-    {
-        try
+        public ProxyBase(TInterface inner)
         {
-            await func(this.inner);
+            this.inner = inner;
         }
-        finally
-        {
-        }
-    }
 
-    protected async Task<TResult> ExecuteAsync<TResult>(Func<TInterface, Task<TResult>> func)
-    {
-        try
+        protected async Task ExecuteAsync(Func<TInterface, Task> func)
         {
-            return await func(this.inner);
+            try
+            {
+                await func(this.inner);
+            }
+            finally
+            {
+            }
         }
-        finally
-        {
-        }
-    }
 
-    protected async Task ExecuteAsync<TParameter>(TParameter parameter, Func<TParameter, TInterface, Task> func)
-    {
-        try
+        protected async Task<TResult> ExecuteAsync<TResult>(Func<TInterface, Task<TResult>> func)
         {
-            await func(parameter, this.inner);
+            try
+            {
+                return await func(this.inner);
+            }
+            finally
+            {
+            }
         }
-        finally
-        {
-        }
-    }
 
-    protected async Task<TResult> ExecuteAsync<TParameter, TResult>(TParameter parameter, Func<TParameter, TInterface, Task<TResult>> func)
-    {
-        try
+        protected async Task ExecuteAsync<TParameter>(TParameter parameter, Func<TParameter, TInterface, Task> func)
         {
-            return await func(parameter, this.inner);
+            try
+            {
+                await func(parameter, this.inner);
+            }
+            finally
+            {
+            }
         }
-        finally
+
+        protected async Task<TResult> ExecuteAsync<TParameter, TResult>(TParameter parameter, Func<TParameter, TInterface, Task<TResult>> func)
         {
+            try
+            {
+                return await func(parameter, this.inner);
+            }
+            finally
+            {
+            }
         }
     }
 }

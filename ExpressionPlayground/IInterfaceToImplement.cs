@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
-
-namespace ExpressionPlayground
+﻿namespace ExpressionPlayground
 {
+    using System.Threading.Tasks;
+
     public interface IInterfaceToImplement
     {
         Task<Model> GetModel(int intParameter, string stringParameter);

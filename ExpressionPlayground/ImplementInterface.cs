@@ -9,6 +9,7 @@ namespace ExpressionPlayground
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+    using System.Threading.Tasks;
 
     using Sigil;
 
@@ -45,7 +46,7 @@ namespace ExpressionPlayground
 
             var baseClass = typeof(ProxyBase<IInterfaceToImplement>);
 
-            var typeName = interfaceToImplement + "+serviceInterfaceProxy";
+            var typeName = "ExpressionPlayground." + interfaceToImplement + "+serviceInterfaceProxy";
             TypeBuilder typeBuilder = this.moduleBuilder.DefineType(typeName, TypeAttributes.Public);
             typeBuilder.SetParent(baseClass);
             typeBuilder.AddInterfaceImplementation(interfaceToImplement);
@@ -59,12 +60,11 @@ namespace ExpressionPlayground
 
             var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(newType, new OurImplementation());
 
+            this.assemblyBuilder.Save(this.assemblyName.Name + ".dll");
+
             var model = dynamicType.GetModel(123, "123");
 
             var setmodel = dynamicType.SetModel(new KeyValuePair<int, string>(1, "one"));
-
-            this.assemblyBuilder.Save(this.assemblyName.Name + ".dll");
-
         }
 
         private DynamicImplementInterfaceResult ImplementInterfaceProxy(Type interfaceType, TypeBuilder typeBuilder, Type baseClass, DynamicImplementInterfaceResult? previousResult = null)
@@ -74,7 +74,7 @@ namespace ExpressionPlayground
 
             if (interfaceType != typeof(IDisposable))
             {
-                result = result.AddUsedNames(this.GenerateMethods(result.NamesUsed, interfaceType, typeBuilder, innerInstanceFieldInfo));
+                result = result.AddUsedNames(this.GenerateMethods(result.NamesUsed, interfaceType, typeBuilder, innerInstanceFieldInfo, baseClass));
 
                 foreach (Type i in interfaceType.GetInterfaces())
                 {
@@ -89,9 +89,9 @@ namespace ExpressionPlayground
             return result;
         }
 
-        private ImmutableList<string> GenerateMethods(ImmutableList<string> usedNames, Type interfaceType, TypeBuilder typeBuilder, FieldInfo innerInstanceFieldInfo)
+        private ImmutableList<string> GenerateMethods(ImmutableList<string> usedNames, Type interfaceToImplementType, TypeBuilder typeBuilder, FieldInfo innerInstanceFieldInfo, Type baseClass)
         {
-            foreach (MethodInfo methodInfo in interfaceType.GetMethods())
+            foreach (MethodInfo methodInfo in interfaceToImplementType.GetMethods())
             {
                 var methodParameters = methodInfo.GetParameters();
                 var genericArguments = methodInfo.GetGenericArguments();
@@ -101,7 +101,7 @@ namespace ExpressionPlayground
                 if (usedNames.Contains(nameWithParams))
                 {
                     throw new NotSupportedException(
-                        string.Format("Error in interface {1}! Method '{0}' already used in other child interface!", nameWithParams, interfaceType.Name)); //LOCSTR
+                        string.Format("Error in interface {1}! Method '{0}' already used in other child interface!", nameWithParams, interfaceToImplementType.Name)); //LOCSTR
                 }
 
                 usedNames = usedNames.Add(nameWithParams);
@@ -123,10 +123,10 @@ namespace ExpressionPlayground
                 {
                     var closureType = CreateClosureType(this.moduleBuilder, methodInfo);
 
-                    var delegateMethodBuilder = CreateDelegateMethod(typeBuilder, methodInfo, closureType, innerInstanceFieldInfo);
+                    var delegateMethodBuilder = CreateDelegateMethod(typeBuilder, methodInfo, closureType, innerInstanceFieldInfo, interfaceToImplementType);
 
                     // Create interface implementation
-                    this.EmitMethodImplementationWithParameters(methodInfo, interfaceImplementationMethodBuilder, innerInstanceFieldInfo, closureType);
+                    this.EmitMethodImplementationWithParameters(methodInfo, interfaceImplementationMethodBuilder, closureType, delegateMethodBuilder, interfaceToImplementType, baseClass);
                 }
                 else
                 {
@@ -140,7 +140,7 @@ namespace ExpressionPlayground
             return usedNames;
         }
 
-        private static MethodBuilder CreateDelegateMethod(TypeBuilder typeBuilder, MethodInfo methodInfo, Type closureType, FieldInfo innerInstanceFieldInfo)
+        private static MethodBuilder CreateDelegateMethod(TypeBuilder typeBuilder, MethodInfo methodInfo, Type closureType, FieldInfo innerInstanceFieldInfo, Type interfaceToImplementType)
         {
             var closureFinalType = closureType;
 
@@ -156,7 +156,7 @@ namespace ExpressionPlayground
                 methodInfo.Name + "_delegate_" + Guid.NewGuid().ToString("N"),
                 MethodAttributes.Private,
                 methodInfo.ReturnType,
-                new[] { closureFinalType });
+                new[] { closureFinalType, interfaceToImplementType });
 
             if (genericArguments.Length > 0)
             {
@@ -193,7 +193,7 @@ namespace ExpressionPlayground
 
             ParameterInfo[] parameterInfoArray = sourceMethodInfo.GetParameters();
 
-            var closureTypeBuilder = moduleBuilder.DefineType(sourceMethodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.Public | TypeAttributes.Sealed);
+            var closureTypeBuilder = moduleBuilder.DefineType("ExpressionPlayground." + sourceMethodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.Public | TypeAttributes.Sealed);
 
             var genericArgumentArray = sourceMethodInfo.GetGenericArguments();
             var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentArray.Select(ga => ga.Name).ToArray());
@@ -235,49 +235,91 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
-        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType)
+        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, Type closureType, MethodBuilder delegateMethodBuilder, Type interfaceType, Type baseClass)
         {
             var generator = mb.GetILGenerator();
 
-            // Create and populate the closure
-            Type closureFinalType = closureType;
+            // Create the closure type and instantiate it
+            Type finalClosureType = closureType;
 
             var genericArguments = mi.GetGenericArguments();
+            var parameters = mi.GetParameters();
+
+            MethodInfo finalDelegateMethod = delegateMethodBuilder;
 
             if (genericArguments.Length > 0)
             {
-                closureFinalType = closureType.MakeGenericType(genericArguments);
+                finalClosureType = closureType.MakeGenericType(genericArguments);
+                finalDelegateMethod.MakeGenericMethod(genericArguments);
             }
 
-            var closureVariable = generator.DeclareLocal(closureFinalType);
-            var closureConstructor = closureFinalType.GetConstructors().Single();
+            var closureVariable = generator.DeclareLocal(finalClosureType);
+            var closureConstructor = finalClosureType.GetConstructors().Single();
 
             generator.Emit(OpCodes.Newobj, closureConstructor);
-            generator.Emit(OpCodes.Stloc, closureVariable);
 
             // Populate the closure
-            var parameters = mi.GetParameters();
-
-            var closureFields = closureFinalType.GetFields();
+            var closureFields = finalClosureType.GetFields();
 
             for (int i = 0; i < parameters.Length; i++)
             {
-                generator.Emit(OpCodes.Ldloc_0);
+                generator.Emit(OpCodes.Dup);
                 generator.Emit(OpCodes.Ldarg, i + 1); // argument i+1 (0 is this.)
                 generator.Emit(OpCodes.Stfld, closureFields[i]);
             }
 
-            // Call the inner method
-            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
-            generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
+            // Store the closure in our local variable
+            generator.Emit(OpCodes.Stloc, closureVariable);
 
-            for (int i = 0; i < parameters.Length; i++)
+
+            // Call this.ExecuteAsync
+            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
+
+            // First parameter to the Func<,,> constructor
+            generator.Emit(OpCodes.Ldloc_0);
+
+            // Second parameter to the Func<,,> constructor
+            // get the address of this.DelegateMethodAsync
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldftn, finalDelegateMethod);
+
+            // Instantiate the Func<,,>
+            var delegateType = typeof(Func<,,>).MakeGenericType(finalClosureType, interfaceType, mi.ReturnType);
+            var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+            generator.Emit(OpCodes.Newobj, delegateConstructor);
+
+            var executeAsyncMethods = baseClass.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
+
+            MethodInfo executeAsync = null;
+
+            // If it has a return value
+            if (mi.ReturnType.GenericTypeArguments.Length == 1)
             {
-                generator.Emit(OpCodes.Ldarg, i + 1); // parameter x
+                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters && method.GetParameters().Length == 2);
+                executeAsync = executeAsync.MakeGenericMethod(finalClosureType, mi.ReturnType.GenericTypeArguments[0]);
+            }
+            else
+            {
+                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters == false && method.GetParameters().Length == 1);
+                executeAsync = executeAsync.MakeGenericMethod(finalClosureType);
             }
 
-            generator.EmitCall(OpCodes.Callvirt, mi, null); // call the inner method
+            generator.EmitCall(OpCodes.Call, executeAsync, null); // call the inner method
             generator.Emit(OpCodes.Ret);
+
+
+
+            ////This code calls the inner method instead
+            ////generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
+            ////generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
+
+            ////for (int i = 0; i < parameters.Length; i++)
+            ////{
+            ////    generator.Emit(OpCodes.Ldarg, i + 1); // parameter x
+            ////}
+
+            ////generator.EmitCall(OpCodes.Callvirt, mi, null); // call the inner method
+            ////generator.Emit(OpCodes.Ret);
         }
 
         private IEnumerable<ConstructorBuilder> CreateSuperClassConstructorCalls(TypeBuilder typeBuilder, Type baseClass)

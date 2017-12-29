@@ -7,8 +7,9 @@
     {
         private static void Main(string[] args)
         {
-            var t = Task.Run(() => throw new Exception("YOYOYO"));
-            t.Wait();
+            var g = new ImplementInterface();
+            g.GenerateProxy();
         }
+
     }
 }

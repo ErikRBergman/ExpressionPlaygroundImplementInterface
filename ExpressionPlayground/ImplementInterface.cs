@@ -24,8 +24,6 @@ namespace ExpressionPlayground
 
         private MethodInfo getTypeFromHandleMethodInfo;
 
-
-
         public ImplementInterface()
         {
 
@@ -53,7 +51,7 @@ namespace ExpressionPlayground
             typeBuilder.AddInterfaceImplementation(interfaceToImplement);
 
             // TODO: Add the outer class parameter to the constructor and add code to store it
-            this.CreateSuperClassConstructorCalls(typeBuilder, baseClass);
+            this.CreateSuperClassConstructorCalls(typeBuilder, baseClass).ToArray();
 
             var result = this.ImplementInterfaceProxy(interfaceToImplement, typeBuilder, baseClass);
 
@@ -62,6 +60,8 @@ namespace ExpressionPlayground
             var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(newType, new OurImplementation());
 
             var model = dynamicType.GetModel(123, "123");
+
+            var setmodel = dynamicType.SetModel(new KeyValuePair<int, string>(1, "one"));
 
             this.assemblyBuilder.Save(this.assemblyName.Name + ".dll");
 
@@ -113,15 +113,18 @@ namespace ExpressionPlayground
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     methodInfo.ReturnType,
                     parameterInfoArray.Select(pi => pi.ParameterType).ToArray());
+
+                GenericTypeParameterBuilder[] methodGenericParameters = Array.Empty<GenericTypeParameterBuilder>();
+
                 if (genericArgumentArray.Any())
                 {
-                    methodBuilder.DefineGenericParameters(genericArgumentNames);
+                    methodGenericParameters = methodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
 
                 if (parameterInfoArray.Length > 0)
                 {
-                    var closureType = CreateClosureType(typeBuilder, methodInfo, genericArgumentArray, genericArgumentNames, parameterInfoArray);
-                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType);
+                    var closureType = CreateClosureType(this.moduleBuilder, typeBuilder, methodInfo, genericArgumentArray, genericArgumentNames, parameterInfoArray);
+                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType, methodGenericParameters);
                 }
                 else
                 {
@@ -136,13 +139,16 @@ namespace ExpressionPlayground
         }
 
         private static Type CreateClosureType(
+            ModuleBuilder moduleBuilder,
             TypeBuilder typeBuilder,
             MethodInfo methodInfo,
             Type[] genericArgumentArray,
             string[] genericArgumentNames,
             ParameterInfo[] parameterInfoArray)
         {
-            var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate | TypeAttributes.Sealed);
+            //var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate | TypeAttributes.Sealed);
+
+            var closureTypeBuilder = moduleBuilder.DefineType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.Public | TypeAttributes.Sealed);
 
             var closureGenericArguments = genericArgumentArray.Length == 0 ? Array.Empty<GenericTypeParameterBuilder>() : closureTypeBuilder.DefineGenericParameters(genericArgumentNames);
 
@@ -159,8 +165,11 @@ namespace ExpressionPlayground
                 closureTypeBuilder.DefineField(parameterInfo.Name, parameterType, FieldAttributes.Public);
             }
 
+            closureTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
             var closureType = closureTypeBuilder.CreateType();
+
             return closureType;
+            //return closureTypeBuilder;
         }
 
         private void EmitMethodImplementationWithoutParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo)
@@ -180,11 +189,29 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
-        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType)
+        private void EmitMethodImplementationWithParameters(MethodInfo mi, MethodBuilder mb, FieldInfo innerInstanceFieldInfo, Type closureType, GenericTypeParameterBuilder[] genericArgumentArray)
         {
             var generator = mb.GetILGenerator();
 
-            generator.Emit(OpCodes.Ldarg_0); // this
+            // Create and populate the closure
+
+            Type closureFinalType = closureType;
+
+            var genericArgumentArray1 = mi.GetGenericArguments();
+
+            if (genericArgumentArray1 != null && genericArgumentArray1.Length > 0)
+            {
+                closureFinalType = closureType.MakeGenericType(genericArgumentArray1);
+            }
+
+            var closureVariable = generator.DeclareLocal(closureFinalType);
+            var constructors = closureFinalType.GetConstructors();   
+
+            generator.Emit(OpCodes.Newobj, constructors[0]);
+            generator.Emit(OpCodes.Stloc, closureVariable);
+
+            // Call the inner method
+            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
             generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
 
             var parameters = mi.GetParameters();
@@ -197,7 +224,7 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
-        private void CreateSuperClassConstructorCalls(TypeBuilder typeBuilder, Type baseClass)
+        private IEnumerable<ConstructorBuilder> CreateSuperClassConstructorCalls(TypeBuilder typeBuilder, Type baseClass)
         {
             foreach (var baseConstructor in baseClass.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
@@ -231,6 +258,8 @@ namespace ExpressionPlayground
                 getIL.Emit(OpCodes.Call, baseConstructor);
 
                 getIL.Emit(OpCodes.Ret);
+
+                yield return ctor;
             }
         }
 

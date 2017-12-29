@@ -12,12 +12,20 @@
 
         public Task<TModel> SetModel<TModel>(TModel model)
         {
-            return this.inner.SetModel(model);
+            var localModel = new SetModelClass<TModel>();
+            localModel.Model = model;
+
+            return this.inner.SetModel(localModel.Model);
         }
 
         public MockTemplate(IInterfaceToImplement inner)
             : base(inner)
         {
         }
+    }
+
+    public class SetModelClass<T>
+    {
+        public T Model { get; set; }
     }
 }

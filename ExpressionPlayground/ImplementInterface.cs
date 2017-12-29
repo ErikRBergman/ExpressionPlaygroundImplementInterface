@@ -93,10 +93,10 @@ namespace ExpressionPlayground
         {
             foreach (MethodInfo methodInfo in interfaceType.GetMethods())
             {
-                var parameterInfoArray = methodInfo.GetParameters();
-                var genericArgumentArray = methodInfo.GetGenericArguments();
+                var methodParameters = methodInfo.GetParameters();
+                var genericArguments = methodInfo.GetGenericArguments();
 
-                string paramNames = string.Join(", ", parameterInfoArray.Select(pi => pi.ParameterType));
+                string paramNames = string.Join(", ", methodParameters.Select(pi => pi.ParameterType));
                 string nameWithParams = string.Concat(methodInfo.Name, "(", paramNames, ")");
                 if (usedNames.Contains(nameWithParams))
                 {
@@ -106,33 +106,83 @@ namespace ExpressionPlayground
 
                 usedNames = usedNames.Add(nameWithParams);
 
-                var methodBuilder = typeBuilder.DefineMethod(
+                var genericArgumentNames = genericArguments.Select(pi => pi.Name).ToArray();
+
+                var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                     methodInfo.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     methodInfo.ReturnType,
-                    parameterInfoArray.Select(pi => pi.ParameterType).ToArray());
+                    methodParameters.Select(pi => pi.ParameterType).ToArray());
 
-                if (genericArgumentArray.Any())
+                if (genericArguments.Any())
                 {
-                   var genericArgumentNames = genericArgumentArray.Select(pi => pi.Name).ToArray();
-                    methodBuilder.DefineGenericParameters(genericArgumentNames);
+                    interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
 
-                if (parameterInfoArray.Length > 0)
+                if (methodParameters.Length > 0)
                 {
                     var closureType = CreateClosureType(this.moduleBuilder, methodInfo);
-                    this.EmitMethodImplementationWithParameters(methodInfo, methodBuilder, innerInstanceFieldInfo, closureType);
+
+                    var delegateMethodBuilder = CreateDelegateMethod(typeBuilder, methodInfo, closureType, innerInstanceFieldInfo);
+
+                    // Create interface implementation
+                    this.EmitMethodImplementationWithParameters(methodInfo, interfaceImplementationMethodBuilder, innerInstanceFieldInfo, closureType);
                 }
                 else
                 {
-                    this.EmitMethodImplementationWithoutParameters(methodInfo, methodBuilder, innerInstanceFieldInfo);
+                    this.EmitMethodImplementationWithoutParameters(methodInfo, interfaceImplementationMethodBuilder, innerInstanceFieldInfo);
                 }
 
                 // Since we're implementing an interface
-                typeBuilder.DefineMethodOverride(methodBuilder, methodInfo);
+                typeBuilder.DefineMethodOverride(interfaceImplementationMethodBuilder, methodInfo);
             }
 
             return usedNames;
+        }
+
+        private static MethodBuilder CreateDelegateMethod(TypeBuilder typeBuilder, MethodInfo methodInfo, Type closureType, FieldInfo innerInstanceFieldInfo)
+        {
+            var closureFinalType = closureType;
+
+            var genericArguments = methodInfo.GetGenericArguments();
+
+            if (genericArguments.Length > 0)
+            {
+                closureFinalType = closureType.MakeGenericType(genericArguments);
+            }
+
+            // Create delegate method - to be able to pass parameters 
+            var delegateMethodBuilder = typeBuilder.DefineMethod(
+                methodInfo.Name + "_delegate_" + Guid.NewGuid().ToString("N"),
+                MethodAttributes.Private,
+                methodInfo.ReturnType,
+                new[] { closureFinalType });
+
+            if (genericArguments.Length > 0)
+            {
+                delegateMethodBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
+            }
+
+            // Get arguments from the closure type
+            var closureFields = closureFinalType.GetFields();
+
+            var parameters = methodInfo.GetParameters();
+
+            var generator = delegateMethodBuilder.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
+            generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                generator.Emit(OpCodes.Ldarg_1); // the closure type parameter
+                generator.Emit(OpCodes.Ldfld, closureFields[i]); // closure field i
+            }
+
+            generator.EmitCall(OpCodes.Callvirt, methodInfo, null); // call the inner method
+            generator.Emit(OpCodes.Ret);
+
+            return delegateMethodBuilder;
         }
 
         private static Type CreateClosureType(
@@ -200,7 +250,7 @@ namespace ExpressionPlayground
             }
 
             var closureVariable = generator.DeclareLocal(closureFinalType);
-            var closureConstructor = closureFinalType.GetConstructors().Single();   
+            var closureConstructor = closureFinalType.GetConstructors().Single();
 
             generator.Emit(OpCodes.Newobj, closureConstructor);
             generator.Emit(OpCodes.Stloc, closureVariable);
@@ -209,7 +259,7 @@ namespace ExpressionPlayground
             var parameters = mi.GetParameters();
 
             var closureFields = closureFinalType.GetFields();
-            
+
             for (int i = 0; i < parameters.Length; i++)
             {
                 generator.Emit(OpCodes.Ldloc_0);

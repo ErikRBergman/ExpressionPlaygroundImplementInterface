@@ -4,8 +4,11 @@
 
     public interface IInterfaceToImplement
     {
-        Task<Model> GetModel(int intParameter, string stringParameter);
+        Task<Model> A(int intParameter, string stringParameter);
 
-        Task<TModel> SetModel<TModel>(TModel model);
+        Task<int> B<TModel>(TModel model);
+
+
+        Task<TModel> C<TModel>(TModel model);
     }
 }

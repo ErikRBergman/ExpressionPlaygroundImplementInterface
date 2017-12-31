@@ -119,7 +119,7 @@
     <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
     <Compile Include="ExpressionHelper.cs" />
     <Compile Include="IInterfaceToImplement.cs" />
-    <Compile Include="ImplementInterface.cs" />
+    <Compile Include="ProxyGenerator.cs" />
     <Compile Include="MockMethodDispatcher.cs" />
     <Compile Include="MockTemplate.cs" />
     <Compile Include="Model.cs" />

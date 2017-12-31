@@ -9,7 +9,7 @@
         {
         }
 
-        public Task<Model> GetModel(int intParameter, string stringParameter)
+        public Task<Model> A(int intParameter, string stringParameter)
         {
             var getModel = new GetModelClass
                                {
@@ -17,27 +17,42 @@
                                    stringParameter = stringParameter
                                };
 
-            return this.ExecuteAsync(getModel, this.GetModelDelegate);
+            return this.ExecuteAsync(getModel, this.a_delegate);
         }
 
-        public Task<TModel> SetModel<TModel>(TModel model)
+        public Task<int> B<TModel>(TModel model)
         {
             var localModel = new SetModelClass<TModel>
                                  {
                                      Model = model
                                  };
 
-            return this.ExecuteAsync(localModel, this.SetModelDelegate);
+            return this.ExecuteAsync(localModel, this.b_delegate);
         }
 
-        private Task<Model> GetModelDelegate(GetModelClass parameter, IInterfaceToImplement innerService)
+        public Task<TModel> C<TModel>(TModel model)
         {
-            return innerService.GetModel(parameter.intParameter, parameter.stringParameter);
+            var localModel = new SetModelClass<TModel>
+                                 {
+                                     Model = model
+                                 };
+
+            return this.ExecuteAsync(localModel, this.c_delegate);
         }
 
-        private Task<TModel> SetModelDelegate<TModel>(SetModelClass<TModel> parameter, IInterfaceToImplement service)
+        private Task<Model> a_delegate(GetModelClass parameter, IInterfaceToImplement innerService)
         {
-            return service.SetModel(parameter.Model);
+            return innerService.A(parameter.intParameter, parameter.stringParameter);
+        }
+
+        private Task<TModel> c_delegate<TModel>(SetModelClass<TModel> parameter, IInterfaceToImplement service)
+        {
+            return service.C(parameter.Model);
+        }
+
+        private Task<int> b_delegate<TModel>(SetModelClass<TModel> parameter, IInterfaceToImplement service)
+        {
+            return service.B(parameter.Model);
         }
     }
 

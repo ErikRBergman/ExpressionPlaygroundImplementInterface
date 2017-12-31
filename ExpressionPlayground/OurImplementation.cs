@@ -4,7 +4,7 @@
 
     public class OurImplementation : IInterfaceToImplement
     {
-        public Task<Model> GetModel(int intParameter, string stringParameter)
+        public Task<Model> A(int intParameter, string stringParameter)
         {
             return Task.FromResult(
                 new Model()
@@ -14,7 +14,12 @@
                 });
         }
 
-        public Task<TModel> SetModel<TModel>(TModel model)
+        public Task<int> B<TModel>(TModel model)
+        {
+            return Task.FromResult(123);
+        }
+
+        public Task<TModel> C<TModel>(TModel model)
         {
             return Task.FromResult(model);
         }

@@ -1,6 +1,7 @@
 ﻿namespace ExpressionPlayground
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     public class Program
@@ -15,7 +16,7 @@
             var assemblyName = "serpent.ProxyBuilder_" + assemblyUniqueName;
 #endif
 
-            var g = new ProxyGenerator<IInterfaceToImplement>(assemblyName);
+            var g = new ProxyTypeGenerator<IInterfaceToImplement>(assemblyName);
             var proxyType = g.GenerateProxy();
 
             var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(proxyType, new OurImplementation());
@@ -28,7 +29,10 @@
 
             var setmodel1 = dynamicType.B("B");
 
-            var setmodel2 = dynamicType.C("C");
+            var setmodelC1 = dynamicType.C("C");
+
+            var setmodelC2 = dynamicType.C(new KeyValuePair<string, int>("One", 1));
+
         }
 
     }

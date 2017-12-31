@@ -7,15 +7,15 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-    public class ProxyGenerator<TInterfaceToImplement> : ProxyGenerator
+    public class ProxyTypeGenerator<TInterfaceToImplement> : ProxyTypeGenerator
     {
-        public ProxyGenerator(string assemblyName)
-            : base(typeof(TInterfaceToImplement), assemblyName)
+        public ProxyTypeGenerator(string assemblyName = null, string namespaceName = null)
+            : base(typeof(TInterfaceToImplement), assemblyName, namespaceName)
         {
         }
     }
 
-    public class ProxyGenerator
+    public class ProxyTypeGenerator
     {
         private readonly AssemblyBuilder assemblyBuilder;
 
@@ -27,11 +27,16 @@
 
         private readonly ModuleBuilder moduleBuilder;
 
-        public ProxyGenerator(Type interfaceToImplementType, string assemblyName = null)
+        private string namespaceName;
+
+        public ProxyTypeGenerator(Type interfaceToImplementType, string assemblyName = null, string namespaceName = null)
         {
-            this.interfaceToImplementType = interfaceToImplementType;
+            this.interfaceToImplementType = interfaceToImplementType ?? throw new ArgumentNullException(nameof(interfaceToImplementType));
+
             var domain = AppDomain.CurrentDomain;
             this.assemblyName = new AssemblyName(assemblyName ?? Guid.NewGuid().ToString("N"));
+
+            this.namespaceName = namespaceName ?? "ProxyTypeGenerator`1";
 
             this.assemblyBuilder = domain.DefineDynamicAssembly(this.assemblyName, AssemblyBuilderAccess.RunAndSave);
             this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(this.assemblyName.Name, this.assemblyName.Name + ".dll");
@@ -41,7 +46,7 @@
 
         public Type GenerateProxy()
         {
-            var typeName = "ExpressionPlayground." + this.interfaceToImplementType + "+serviceInterfaceProxy";
+            var typeName = this.namespaceName + "." + this.interfaceToImplementType + "+serviceInterfaceProxy";
             var typeBuilder = this.moduleBuilder.DefineType(typeName, TypeAttributes.Public);
             typeBuilder.SetParent(this.baseClass);
             typeBuilder.AddInterfaceImplementation(this.interfaceToImplementType);
@@ -51,7 +56,7 @@
 
             var interfaces = this.GetInterfaces(this.interfaceToImplementType);
 
-            var result = this.ImplementInterfaceProxy(interfaces, typeBuilder);
+            var result = this.ImplementInterfaceMethods(interfaces, typeBuilder);
 
             var newType = typeBuilder.CreateType();
 
@@ -186,26 +191,28 @@
         }
 
         private void EmitMethodImplementationWithParameters(
-            MethodInfo mi,
-            MethodBuilder mb,
+            MethodInfo sourceMethodInfo,
+            MethodBuilder methodBuilder,
             Type closureType,
             MethodBuilder delegateMethodBuilder,
-            Type interfaceType,
-            Type baseClass)
+            Type interfaceType)
         {
-            var generator = mb.GetILGenerator();
+            var generator = methodBuilder.GetILGenerator();
 
             // Create the closure type and instantiate it
             var finalClosureType = closureType;
 
-            var genericArguments = mi.GetGenericArguments();
-            var parameters = mi.GetParameters();
+            var genericArguments = sourceMethodInfo.GetGenericArguments();
+            var parameters = sourceMethodInfo.GetParameters();
 
             MethodInfo finalDelegateMethod = delegateMethodBuilder;
 
             if (genericArguments.Length > 0)
             {
+                // Make closure generic with our methods type
                 finalClosureType = closureType.MakeGenericType(genericArguments);
+
+                // Make the delegate generic
                 finalDelegateMethod = finalDelegateMethod.MakeGenericMethod(genericArguments);
             }
 
@@ -239,19 +246,19 @@
             generator.Emit(OpCodes.Ldftn, finalDelegateMethod);
 
             // Instantiate the Func<,,>
-            var delegateType = typeof(Func<,,>).MakeGenericType(finalClosureType, interfaceType, mi.ReturnType);
+            var delegateType = typeof(Func<,,>).MakeGenericType(finalClosureType, interfaceType, sourceMethodInfo.ReturnType);
             var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
             generator.Emit(OpCodes.Newobj, delegateConstructor);
 
-            var executeAsyncMethods = baseClass.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
+            var executeAsyncMethods = this.GetExecuteAsyncMethods();
 
             MethodInfo executeAsync = null;
 
             // If it has a return value
-            if (mi.ReturnType.GenericTypeArguments.Length == 1)
+            if (sourceMethodInfo.ReturnType.GenericTypeArguments.Length == 1)
             {
                 executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters && method.GetParameters().Length == 2);
-                executeAsync = executeAsync.MakeGenericMethod(finalClosureType, mi.ReturnType.GenericTypeArguments[0]);
+                executeAsync = executeAsync.MakeGenericMethod(finalClosureType, sourceMethodInfo.ReturnType.GenericTypeArguments[0]);
             }
             else
             {
@@ -275,7 +282,12 @@
             ////generator.Emit(OpCodes.Ret);
         }
 
-        private ImmutableList<string> GenerateMethods(TypeBuilder typeBuilder, Type @interface, ImmutableList<string> usedNames)
+        private IEnumerable<MethodInfo> GetExecuteAsyncMethods()
+        {
+            return this.baseClass.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
+        }
+
+        private ImmutableList<string> ImplementInterfaceMethod(TypeBuilder typeBuilder, Type @interface, ImmutableList<string> usedNames)
         {
             foreach (var methodToImplementMethodInfo in @interface.GetMethods())
             {
@@ -320,8 +332,7 @@
                         interfaceImplementationMethodBuilder,
                         closureType,
                         delegateMethodBuilder,
-                        @interface,
-                        this.baseClass);
+                        @interface);
                 }
                 else
                 {
@@ -343,17 +354,16 @@
             return interfaces;
         }
 
-        private DynamicImplementInterfaceResult ImplementInterfaceProxy(
+        private DynamicImplementInterfaceResult ImplementInterfaceMethods(
             IEnumerable<Type> interfaces,
             TypeBuilder typeBuilder,
             DynamicImplementInterfaceResult? previousResult = null)
         {
             var result = previousResult ?? DynamicImplementInterfaceResult.Empty;
-            var innerInstanceFieldInfo = this.baseClass.GetField("inner", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             foreach (var interfaceType in interfaces)
             {
-                result = result.AddUsedNames(this.GenerateMethods(typeBuilder, interfaceType, result.NamesUsed));
+                result = result.AddUsedNames(this.ImplementInterfaceMethod(typeBuilder, interfaceType, result.NamesUsed));
                 result = result.AddImplementedInterface(interfaceType);
             }
 

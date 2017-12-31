@@ -5,19 +5,19 @@
 
     public static class DynamicImplementInterfaceResultExtensions
     {
-        public static DynamicImplementInterfaceResult Add(this DynamicImplementInterfaceResult dynamicImplementInterfaceResult, DynamicImplementInterfaceResult other)
+        public static ImplementInterfaceMethodResult Add(this ImplementInterfaceMethodResult implementInterfaceMethodResult, ImplementInterfaceMethodResult other)
         {
-            return new DynamicImplementInterfaceResult(dynamicImplementInterfaceResult.InterfacesImplemented.AddRange(other.InterfacesImplemented), dynamicImplementInterfaceResult.NamesUsed.AddRange(other.NamesUsed));
+            return new ImplementInterfaceMethodResult(implementInterfaceMethodResult.InterfacesImplemented.AddRange(other.InterfacesImplemented), implementInterfaceMethodResult.NamesUsed.AddRange(other.NamesUsed));
         }
 
-        public static DynamicImplementInterfaceResult AddImplementedInterface(this DynamicImplementInterfaceResult dynamicImplementInterfaceResult, Type interfaceType)
+        public static ImplementInterfaceMethodResult AddImplementedInterface(this ImplementInterfaceMethodResult implementInterfaceMethodResult, Type interfaceType)
         {
-            return new DynamicImplementInterfaceResult(dynamicImplementInterfaceResult.InterfacesImplemented.Add(interfaceType), dynamicImplementInterfaceResult.NamesUsed);
+            return new ImplementInterfaceMethodResult(implementInterfaceMethodResult.InterfacesImplemented.Add(interfaceType), implementInterfaceMethodResult.NamesUsed);
         }
 
-        public static DynamicImplementInterfaceResult AddUsedNames(this DynamicImplementInterfaceResult dynamicImplementInterfaceResult, IEnumerable<string> usedNames)
+        public static ImplementInterfaceMethodResult AddUsedNames(this ImplementInterfaceMethodResult implementInterfaceMethodResult, IEnumerable<string> usedNames)
         {
-            return new DynamicImplementInterfaceResult(dynamicImplementInterfaceResult.InterfacesImplemented, dynamicImplementInterfaceResult.NamesUsed.AddRange(usedNames));
+            return new ImplementInterfaceMethodResult(implementInterfaceMethodResult.InterfacesImplemented, implementInterfaceMethodResult.NamesUsed.AddRange(usedNames));
         }
     }
 }

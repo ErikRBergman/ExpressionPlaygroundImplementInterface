@@ -27,9 +27,11 @@
 
         private readonly ModuleBuilder moduleBuilder;
 
-        private string namespaceName;
+        private readonly string namespaceName;
 
-        public ProxyTypeGenerator(Type interfaceToImplementType, string assemblyName = null, string namespaceName = null)
+        private Func<Type, MethodInfo, string> closureNamefunc;
+
+        public ProxyTypeGenerator(Type interfaceToImplementType, string assemblyName = null, string namespaceName = null, Func<Type, MethodInfo, string> closureNameFunc = null)
         {
             this.interfaceToImplementType = interfaceToImplementType ?? throw new ArgumentNullException(nameof(interfaceToImplementType));
 
@@ -42,6 +44,8 @@
             this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(this.assemblyName.Name, this.assemblyName.Name + ".dll");
 
             this.baseClass = typeof(ProxyBase<>).MakeGenericType(this.interfaceToImplementType);
+
+            this.closureNamefunc = closureNameFunc ?? ((interfaceType, methodInfo) => interfaceType.Name + "." + methodInfo.Name + "_" + "_" + Guid.NewGuid().ToString("N"));
         }
 
         public Type GenerateProxy()
@@ -51,8 +55,7 @@
             typeBuilder.SetParent(this.baseClass);
             typeBuilder.AddInterfaceImplementation(this.interfaceToImplementType);
 
-            // TODO: Add the outer class parameter to the constructor and add code to store it
-            this.CreateSuperClassConstructorCalls(typeBuilder, this.baseClass).ToArray();
+            this.CreateSuperClassConstructorCalls(typeBuilder).ToArray();
 
             var interfaces = this.GetInterfaces(this.interfaceToImplementType);
 
@@ -145,14 +148,14 @@
             return delegateMethodBuilder;
         }
 
-        private IEnumerable<ConstructorBuilder> CreateSuperClassConstructorCalls(TypeBuilder typeBuilder, Type baseClass)
+        private IEnumerable<ConstructorBuilder> CreateSuperClassConstructorCalls(TypeBuilder typeBuilder)
         {
-            foreach (var baseConstructor in baseClass.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+            foreach (var baseConstructor in this.baseClass.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 var parameters = baseConstructor.GetParameters();
                 if (parameters.Length > 0 && parameters.Last().IsDefined(typeof(ParamArrayAttribute), false))
                 {
-                    throw new InvalidOperationException("Variadic constructors are not supported"); // LOCSTR
+                    throw new InvalidOperationException("Variadic constructors are not supported");
                 }
 
                 var parameterTypes = parameters.Select(p => p.ParameterType).ToArray();
@@ -169,7 +172,6 @@
                 }
 
                 var getIL = ctor.GetILGenerator();
-                getIL.Emit(OpCodes.Nop);
 
                 getIL.Emit(OpCodes.Ldarg_0);
                 for (var i = 1; i <= parameters.Length; ++i)
@@ -190,12 +192,7 @@
             throw new NotImplementedException();
         }
 
-        private void EmitMethodImplementationWithParameters(
-            MethodInfo sourceMethodInfo,
-            MethodBuilder methodBuilder,
-            Type closureType,
-            MethodBuilder delegateMethodBuilder,
-            Type interfaceType)
+        private void EmitMethodImplementationWithParameters(Type interfaceType, MethodInfo sourceMethodInfo, MethodBuilder methodBuilder, Type closureType, MethodBuilder delegateMethodBuilder)
         {
             var generator = methodBuilder.GetILGenerator();
 
@@ -318,8 +315,7 @@
 
                 if (methodParameters.Length > 0)
                 {
-                    // var closureTypeName = "ExpressionPlayground." + methodToImplementMethodInfo.Name + "_" + Guid.NewGuid().ToString("N");
-                    var closureTypeName = "ExpressionPlayground.ExpressionPlayground." + methodToImplementMethodInfo.Name;
+                    var closureTypeName = this.namespaceName + "." + this.closureNamefunc(@interface, methodToImplementMethodInfo);
 
                     var closureType = CreateClosureType(closureTypeName, this.moduleBuilder, methodToImplementMethodInfo);
 
@@ -327,12 +323,7 @@
                     var delegateMethodBuilder = CreateDelegateMethod(delegateMethodName, typeBuilder, methodToImplementMethodInfo, closureType, @interface);
 
                     // Create interface implementation
-                    this.EmitMethodImplementationWithParameters(
-                        methodToImplementMethodInfo,
-                        interfaceImplementationMethodBuilder,
-                        closureType,
-                        delegateMethodBuilder,
-                        @interface);
+                    this.EmitMethodImplementationWithParameters(@interface, methodToImplementMethodInfo, interfaceImplementationMethodBuilder, closureType, delegateMethodBuilder);
                 }
                 else
                 {
@@ -354,12 +345,12 @@
             return interfaces;
         }
 
-        private DynamicImplementInterfaceResult ImplementInterfaceMethods(
+        private ImplementInterfaceMethodResult ImplementInterfaceMethods(
             IEnumerable<Type> interfaces,
             TypeBuilder typeBuilder,
-            DynamicImplementInterfaceResult? previousResult = null)
+            ImplementInterfaceMethodResult? previousResult = null)
         {
-            var result = previousResult ?? DynamicImplementInterfaceResult.Empty;
+            var result = previousResult ?? ImplementInterfaceMethodResult.Empty;
 
             foreach (var interfaceType in interfaces)
             {

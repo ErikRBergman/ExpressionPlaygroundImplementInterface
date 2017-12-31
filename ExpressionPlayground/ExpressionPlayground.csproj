@@ -115,7 +115,7 @@
   <ItemGroup>
     <Compile Include="CreateInstanceFactory.cs" />
     <Compile Include="CreateMethodProxyFactory.cs" />
-    <Compile Include="DynamicImplementInterfaceResult.cs" />
+    <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
     <Compile Include="ExpressionHelper.cs" />
     <Compile Include="IInterfaceToImplement.cs" />

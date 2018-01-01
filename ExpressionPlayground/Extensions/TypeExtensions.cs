@@ -21,5 +21,15 @@
         {
             return interfaceType.GetInterfaces().Aggregate(interfaces, (current, i) => current.Add(i));
         }
+
+        public static Type MakeGenericTypeIfNecessary(this Type closureType, params Type[] parameterTypes)
+        {
+            if (parameterTypes.Length > 0)
+            {
+                return closureType.MakeGenericType(parameterTypes);
+            }
+
+            return closureType;
+        }
     }
 }

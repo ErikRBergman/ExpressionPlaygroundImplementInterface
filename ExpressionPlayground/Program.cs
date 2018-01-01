@@ -4,20 +4,15 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
+    using ExpressionPlayground.Extensions;
+
     public class Program
     {
         private static void Main(string[] args)
         {
 
-#if DEBUG
-            var assemblyName = "Serpent.ProxyBuilder.Debug";
-#else
-            string assemblyUniqueName = Guid.NewGuid().ToString("N");
-            var assemblyName = "serpent.ProxyBuilder_" + assemblyUniqueName;
-#endif
-
-            var g = new ProxyTypeBuilder<IInterfaceToImplement>(assemblyName);
-            var proxy = g.GenerateProxy();
+            var g = new ProxyTypeBuilder();
+            var proxy = g.GenerateProxy<IInterfaceToImplement>();
 
             var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(proxy.GeneratedType, new OurImplementation());
 
@@ -35,7 +30,7 @@
 
             var modelD = dynamicType.D(1, "Dos", new KeyValuePair<int, string>(3, "Drei"));
 
-            proxy.AssemblyBuilder.Save(assemblyName + ".dll");
+            DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
         }
 
     }

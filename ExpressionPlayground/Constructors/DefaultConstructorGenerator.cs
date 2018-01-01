@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Constructor
+﻿namespace ExpressionPlayground.Constructors
 {
     using System;
     using System.Linq;

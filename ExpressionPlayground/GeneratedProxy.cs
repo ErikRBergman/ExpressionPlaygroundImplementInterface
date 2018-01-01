@@ -1,18 +1,19 @@
 ﻿namespace ExpressionPlayground
 {
     using System;
+    using System.Collections.Generic;
     using System.Reflection.Emit;
 
     public struct GeneratedProxy
     {
-        public GeneratedProxy(AssemblyBuilder assemblyBuilder, Type generatedType)
+        public GeneratedProxy(Type generatedType, IEnumerable<Type> interfacesImplemented)
         {
-            this.AssemblyBuilder = assemblyBuilder;
             this.GeneratedType = generatedType;
+            this.InterfacesImplemented = interfacesImplemented;
         }
 
-        public AssemblyBuilder AssemblyBuilder { get; }
-
         public Type GeneratedType { get; }
+
+        public IEnumerable<Type> InterfacesImplemented { get; }
     }
 }

@@ -1,4 +1,4 @@
-namespace ExpressionPlayground.Closure
+namespace ExpressionPlayground.Closures
 {
     using System;
     using System.Linq;
@@ -41,5 +41,6 @@ namespace ExpressionPlayground.Closure
             ////return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, typeof(ValueType));
             return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed);
         }
+
     }
 }

@@ -16,7 +16,7 @@
     </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -26,7 +26,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -113,14 +113,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Closure\ClosureBuilder.cs" />
+    <Compile Include="Constructor\DefaultConstructorGenerator.cs" />
     <Compile Include="CreateInstanceFactory.cs" />
     <Compile Include="CreateMethodProxyFactory.cs" />
     <Compile Include="GeneratedProxy.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
     <Compile Include="ExpressionHelper.cs" />
     <Compile Include="IInterfaceToImplement.cs" />
-    <Compile Include="ProxyTypeGenerator.cs" />
+    <Compile Include="ProxyTypeBuilder.cs" />
     <Compile Include="MockMethodDispatcher.cs" />
     <Compile Include="MockTemplate.cs" />
     <Compile Include="Model.cs" />
@@ -136,6 +139,10 @@
   </ItemGroup>
   <ItemGroup>
     <Analyzer Include="..\packages\xunit.analyzers.0.8.0\analyzers\dotnet\cs\xunit.analyzers.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Attributes\" />
+    <Folder Include="Helpers\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

@@ -69,7 +69,7 @@
         }
     }
 
-    public class GetModelClass
+    public struct GetModelClass
     {
         public int intParameter;
 

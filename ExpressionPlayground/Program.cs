@@ -16,10 +16,10 @@
             var assemblyName = "serpent.ProxyBuilder_" + assemblyUniqueName;
 #endif
 
-            var g = new ProxyTypeGenerator<IInterfaceToImplement>(assemblyName);
-            var proxyType = g.GenerateProxy();
+            var g = new ProxyTypeBuilder<IInterfaceToImplement>(assemblyName);
+            var proxy = g.GenerateProxy();
 
-            var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(proxyType.GeneratedType, new OurImplementation());
+            var dynamicType = (IInterfaceToImplement)Activator.CreateInstance(proxy.GeneratedType, new OurImplementation());
 
             var model = dynamicType.A(123, "123");
 
@@ -35,6 +35,7 @@
 
             var modelD = dynamicType.D(1, "Dos", new KeyValuePair<int, string>(3, "Drei"));
 
+            proxy.AssemblyBuilder.Save(assemblyName + ".dll");
         }
 
     }

@@ -40,6 +40,19 @@
             return this.ExecuteAsync(localModel, this.c_delegate);
         }
 
+        public Task<ThreeGenericParameter<T1, T2, T3>> D<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
+        {
+            return Task.FromResult(
+                new ThreeGenericParameter<T1, T2, T3>
+                    {
+                        t1 = t1,
+
+                        t2 = t2,
+
+                        t3 = t3
+                    });
+        }
+
         private Task<Model> a_delegate(GetModelClass parameter, IInterfaceToImplement innerService)
         {
             return innerService.A(parameter.intParameter, parameter.stringParameter);

@@ -1,4 +1,5 @@
-﻿namespace ExpressionPlayground
+﻿// ReSharper disable StyleCop.SA1402
+namespace ExpressionPlayground
 {
     using System;
     using System.Collections.Generic;
@@ -29,28 +30,33 @@
 
         private readonly string namespaceName;
 
-        private Func<Type, MethodInfo, string> closureNamefunc;
+        private readonly Func<Type, MethodInfo, string> closureNamefunc;
 
-        public ProxyTypeGenerator(Type interfaceToImplementType, string assemblyName = null, string namespaceName = null, Func<Type, MethodInfo, string> closureNameFunc = null)
+        private readonly Func<Type, string> generatedTypeNameFunc;
+
+        public ProxyTypeGenerator(Type interfaceToImplementType, string assemblyName = null, string namespaceName = null, Func<Type, MethodInfo, string> closureNameFunc = null, Func<Type, string> generatedTypeNameFunc = null)
         {
             this.interfaceToImplementType = interfaceToImplementType ?? throw new ArgumentNullException(nameof(interfaceToImplementType));
 
             var domain = AppDomain.CurrentDomain;
             this.assemblyName = new AssemblyName(assemblyName ?? Guid.NewGuid().ToString("N"));
 
-            this.namespaceName = namespaceName ?? "ProxyTypeGenerator`1";
+            this.namespaceName = namespaceName ?? typeof(ProxyTypeGenerator).Namespace + ".GeneratedTypes";
 
             this.assemblyBuilder = domain.DefineDynamicAssembly(this.assemblyName, AssemblyBuilderAccess.RunAndSave);
             this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(this.assemblyName.Name, this.assemblyName.Name + ".dll");
 
             this.baseClass = typeof(ProxyBase<>).MakeGenericType(this.interfaceToImplementType);
 
+            // Default delegates for names
             this.closureNamefunc = closureNameFunc ?? ((interfaceType, methodInfo) => interfaceType.Name + "." + methodInfo.Name + "_" + "_" + Guid.NewGuid().ToString("N"));
+
+            this.generatedTypeNameFunc = generatedTypeNameFunc ?? (interfaceType => this.namespaceName + "." + this.interfaceToImplementType.Name + "+serviceInterfaceProxy");
         }
 
-        public Type GenerateProxy()
+        public GeneratedProxy GenerateProxy()
         {
-            var typeName = this.namespaceName + "." + this.interfaceToImplementType + "+serviceInterfaceProxy";
+            var typeName = this.generatedTypeNameFunc(this.interfaceToImplementType);
             var typeBuilder = this.moduleBuilder.DefineType(typeName, TypeAttributes.Public);
             typeBuilder.SetParent(this.baseClass);
             typeBuilder.AddInterfaceImplementation(this.interfaceToImplementType);
@@ -61,16 +67,15 @@
 
             var result = this.ImplementInterfaceMethods(interfaces, typeBuilder);
 
-            var newType = typeBuilder.CreateType();
+            var generatedType = typeBuilder.CreateType();
 
             this.assemblyBuilder.Save(this.assemblyName.Name + ".dll");
 
-            return newType;
+            return new GeneratedProxy(this.assemblyBuilder, generatedType);
         }
 
         private static Type CreateClosureType(string closureTypeName, ModuleBuilder moduleBuilder, MethodInfo sourceMethodInfo)
         {
-            // var closureTypeBuilder = typeBuilder.DefineNestedType(methodInfo.Name + "_" + Guid.NewGuid().ToString("N"), TypeAttributes.NestedPrivate | TypeAttributes.Sealed);
             var parameters = sourceMethodInfo.GetParameters();
 
             var closureTypeBuilder = moduleBuilder.DefineType(closureTypeName, TypeAttributes.Public | TypeAttributes.Sealed);
@@ -80,6 +85,7 @@
                                               ? Array.Empty<GenericTypeParameterBuilder>()
                                               : closureTypeBuilder.DefineGenericParameters(genericArgumentArray.Select(ga => ga.Name).ToArray());
 
+            // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)
             {
                 var parameterType = parameter.ParameterType;
@@ -99,6 +105,15 @@
             return closureType;
         }
 
+        /// <summary>
+        /// This creates the method that is called by the dynamically implemented method that calls 
+        /// </summary>
+        /// <param name="delegateMethodName"></param>
+        /// <param name="typeBuilder"></param>
+        /// <param name="methodInfo"></param>
+        /// <param name="closureType"></param>
+        /// <param name="interfaceToImplementType"></param>
+        /// <returns></returns>
         private static MethodBuilder CreateDelegateMethod(
             string delegateMethodName,
             TypeBuilder typeBuilder,

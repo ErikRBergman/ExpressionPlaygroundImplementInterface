@@ -7,7 +7,7 @@
         public Task<Model> A(int intParameter, string stringParameter)
         {
             return Task.FromResult(
-                new Model()
+                new Model
                 {
                     IntValue = intParameter,
                     StringValue = stringParameter
@@ -22,6 +22,19 @@
         public Task<TModel> C<TModel>(TModel model)
         {
             return Task.FromResult(model);
+        }
+
+        public Task<ThreeGenericParameter<T1, T2, T3>> D<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
+        {
+            return Task.FromResult(
+                new ThreeGenericParameter<T1, T2, T3>
+                {
+                    t1 = t1,
+
+                    t2 = t2,
+
+                    t3 = t3
+                });
         }
     }
 }

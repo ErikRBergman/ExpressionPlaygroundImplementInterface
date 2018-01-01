@@ -5,7 +5,7 @@
 
     public class ProxyBase<TInterface>
     {
-        protected readonly TInterface inner;
+        private readonly TInterface inner;
 
         public ProxyBase(TInterface inner)
         {

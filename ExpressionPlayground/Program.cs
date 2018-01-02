@@ -30,6 +30,8 @@
 
             var modelD = dynamicType.D(1, "Dos", new KeyValuePair<int, string>(3, "Drei"));
 
+            var modelE = dynamicType.E(5, "Five");
+
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
         }
 

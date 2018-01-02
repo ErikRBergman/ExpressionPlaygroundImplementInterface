@@ -17,5 +17,7 @@
             AssemblyBuilderAccess.RunAndSave);
 
         public static ModuleBuilder DefaultModuleBuilder { get; }
+
+        public static string DefaultTypeNamespace { get; } = typeof(ProxyTypeBuilder).Namespace + ".GeneratedTypes";
     }
 }

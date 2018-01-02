@@ -40,7 +40,12 @@
             }
 
             // Get arguments from the closure type
-            var closureFields = closureFinalType.GetFields();
+            FieldInfo[] closureFields = Array.Empty<FieldInfo>();
+
+            if (closureFinalType != null)
+            {
+                closureFields = closureFinalType.GetFields();
+            }
 
             var parameters = methodInfo.GetParameters();
 

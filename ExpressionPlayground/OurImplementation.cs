@@ -36,5 +36,21 @@
                     t3 = t3
                 });
         }
+
+        public Task E(int intParameter, string stringParameter)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task F<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task G<T1>()
+        {
+            var type = typeof(T1);
+            return Task.CompletedTask;
+        }
     }
 }

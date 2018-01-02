@@ -30,7 +30,7 @@ namespace ExpressionPlayground.Closures
                 closureTypeBuilder.DefineField(parameter.Name, parameterType, FieldAttributes.Public);
             }
 
-            closureTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public);
+            closureTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.HideBySig);
             var closureType = closureTypeBuilder.CreateType();
 
             return closureType;
@@ -39,7 +39,7 @@ namespace ExpressionPlayground.Closures
         public static TypeBuilder CreateClosureTypeBuilder(ModuleBuilder moduleBuilder, string closureTypeName)
         {
             ////return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, typeof(ValueType));
-            return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed);
+            return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.Public | TypeAttributes.Sealed);
         }
 
     }

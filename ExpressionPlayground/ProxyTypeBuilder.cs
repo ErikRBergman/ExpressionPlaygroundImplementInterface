@@ -19,107 +19,77 @@ namespace ExpressionPlayground
 
     public class ProxyTypeBuilder
     {
-        private Func<Type, MethodInfo, string, string> closureTypeNameSelector;
-
-        private ModuleBuilder moduleBuilder;
-
-        private string namespaceName;
-
-        private Type parentType;
-
-        private Func<Type, string, string> proxyTypeNameSelectorFunc;
-
         public ProxyTypeBuilder()
         {
-            this.namespaceName = this.namespaceName ?? typeof(ProxyTypeBuilder).Namespace + ".GeneratedTypes";
+            this.Namespace = this.Namespace ?? DefaultValues.DefaultTypeNamespace;
 
-            this.moduleBuilder = DefaultValues.DefaultModuleBuilder;
+            this.ModuleBuilder = DefaultValues.DefaultModuleBuilder;
 
             // Default delegates for names
-            this.closureTypeNameSelector = (@interface, methodInfo, @namespace) => @namespace + "." + @interface.Name + "." + methodInfo.Name + "_" + "_" + Guid.NewGuid().ToString("N");
-            this.proxyTypeNameSelectorFunc = (@interface, @namespace) => @namespace + "." + @interface.Name + "+proxy";
+            this.ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
+                @namespace + "." + @interface.Name + "." + methodInfo.Name + "_" + "_" + Guid.NewGuid().ToString("N");
+            this.ProxyTypeNameSelectorFunc = (@interface, @namespace) => @namespace + "." + @interface.Name + "+proxy";
         }
 
-        public ProxyTypeBuilder ClosureTypeNameSelector(Func<Type, MethodInfo, string, string> closureTypeNameSelector)
-        {
-            this.closureTypeNameSelector = closureTypeNameSelector ?? throw new ArgumentNullException(nameof(closureTypeNameSelector));
-            return this;
-        }
+        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; }
+
+        public ModuleBuilder ModuleBuilder { get; set; }
+
+        public string Namespace { get; set; }
+
+        public Func<Type, string, string> ProxyTypeNameSelectorFunc { get; set; }
 
         public GeneratedProxy GenerateProxy(Type interfaceToImplement)
         {
             Validator.Default.IsNotNull(interfaceToImplement, nameof(interfaceToImplement)).IsInterface(interfaceToImplement, nameof(interfaceToImplement));
 
-            this.parentType = typeof(ProxyBase<>).MakeGenericType(interfaceToImplement);
+            var parentType = typeof(ProxyBase<>).MakeGenericType(interfaceToImplement);
 
-            var typeName = this.proxyTypeNameSelectorFunc(interfaceToImplement, this.namespaceName);
+            var typeName = this.ProxyTypeNameSelectorFunc(interfaceToImplement, this.Namespace);
 
-            var typeBuilder = this.moduleBuilder.DefineType(typeName, TypeAttributes.Public, this.parentType);
+            var typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public, parentType);
             typeBuilder.AddInterfaceImplementation(interfaceToImplement);
 
-            DefaultConstructorGenerator.CreateSuperClassConstructorCalls(typeBuilder, this.parentType);
+            DefaultConstructorGenerator.CreateSuperClassConstructorCalls(typeBuilder, parentType);
 
-            var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces());
+            var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces(), parentType);
 
             var generatedType = typeBuilder.CreateType();
             return new GeneratedProxy(generatedType, result.InterfacesImplemented);
         }
 
-        public ProxyTypeBuilder ModuleBuilder(ModuleBuilder moduleBuilder)
-        {
-            this.moduleBuilder = moduleBuilder;
-            return this;
-        }
-
-        public ProxyTypeBuilder Namespace(string @namespace)
-        {
-            this.namespaceName = @namespace;
-            return this;
-        }
-
-        public ProxyTypeBuilder ProxyTypeNameSelector(Func<Type, string, string> proxyTypeNameSelectorFunc)
-        {
-            this.proxyTypeNameSelectorFunc = proxyTypeNameSelectorFunc;
-            return this;
-        }
-
-        private static void EmitMethodImplementationWithoutParameters(MethodInfo mi, MethodBuilder mb)
-        {
-            throw new NotImplementedException();
-        }
-
-        private static void EmitMethodImplementationWithParameters(
+        private static void EmitMethodImplementation(
             Type interfaceType,
             MethodInfo sourceMethodInfo,
             MethodBuilder methodBuilder,
             Type closureFinalType,
-            MethodBuilder delegateMethodBuilder,
+            MethodInfo finalDelegateMethod,
             Type parentType)
         {
-            var genericArguments = sourceMethodInfo.GetGenericArguments();
-
-            var finalDelegateMethod = delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
-
             var generator = methodBuilder.GetILGenerator();
-
-            var closureVariable = generator.DeclareLocal(closureFinalType);
-            var closureConstructor = closureFinalType.GetConstructors().Single();
-
-            generator.Emit(OpCodes.Newobj, closureConstructor);
-
-            // Populate the closure
             var parameters = sourceMethodInfo.GetParameters();
-            var closureFields = closureFinalType.GetFields();
 
-            for (var i = 0; i < parameters.Length; i++)
+            if (closureFinalType != null)
             {
-                generator.Emit(OpCodes.Dup);
-                generator.Emit(OpCodes.Ldarg, i + 1); // argument i+1 (0 is this.)
-                generator.Emit(OpCodes.Stfld, closureFields[i]);
-            }
 
-            // Store the closure in our local variable
-            generator.Emit(OpCodes.Stloc, closureVariable);
+                var closureVariable = generator.DeclareLocal(closureFinalType);
+                var closureConstructor = closureFinalType.GetConstructors().Single();
+
+                generator.Emit(OpCodes.Newobj, closureConstructor);
+
+                // Populate the closure
+                var closureFields = closureFinalType.GetFields();
+
+                for (var i = 0; i < parameters.Length; i++)
+                {
+                    generator.Emit(OpCodes.Dup);
+                    generator.Emit(OpCodes.Ldarg, i + 1); // argument i+1 (0 is this.)
+                    generator.Emit(OpCodes.Stfld, closureFields[i]);
+                }
+
+                // Store the closure in our local variable
+                generator.Emit(OpCodes.Stloc, closureVariable);
+            }
 
             // Call this.ExecuteAsync
             generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
@@ -149,24 +119,12 @@ namespace ExpressionPlayground
             }
             else
             {
-                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters == false && method.GetParameters().Length == 1);
+                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters == false && method.GetParameters().Length == 2);
                 executeAsync = executeAsync.MakeGenericMethod(closureFinalType);
             }
 
             generator.EmitCall(OpCodes.Call, executeAsync, null); // call the inner method
             generator.Emit(OpCodes.Ret);
-
-            ////This code calls the inner method instead
-            ////generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
-            ////generator.Emit(OpCodes.Ldfld, innerInstanceFieldInfo); // .inner
-
-            ////for (int i = 0; i < parameters.Length; i++)
-            ////{
-            ////    generator.Emit(OpCodes.Ldarg, i + 1); // parameter x
-            ////}
-
-            ////generator.EmitCall(OpCodes.Callvirt, mi, null); // call the inner method
-            ////generator.Emit(OpCodes.Ret);
         }
 
         private static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
@@ -174,14 +132,19 @@ namespace ExpressionPlayground
             return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
         }
 
-        private static ImmutableList<string> ImplementInterfaceMethod(TypeBuilder typeBuilder, Type @interface, ImmutableList<string> usedNames, Type parentType, Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc)
+        private static ImmutableList<string> ImplementInterfaceMethod(
+            TypeBuilder typeBuilder,
+            Type @interface,
+            ImmutableList<string> usedNames,
+            Type parentType,
+            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc)
         {
             foreach (var method in @interface.GetMethods())
             {
-                var methodParameters = method.GetParameters();
+                var parameters = method.GetParameters();
                 var genericArguments = method.GetGenericArguments();
 
-                var paramNames = string.Join(", ", methodParameters.Select(pi => pi.ParameterType));
+                var paramNames = string.Join(", ", parameters.Select(pi => pi.ParameterType));
                 var nameWithParams = string.Concat(method.Name, "(", paramNames, ")");
                 if (usedNames.Contains(nameWithParams))
                 {
@@ -196,27 +159,34 @@ namespace ExpressionPlayground
                     method.Name,
                     MethodAttributes.Public | MethodAttributes.Virtual,
                     method.ReturnType,
-                    methodParameters.Select(pi => pi.ParameterType).ToArray());
+                    parameters.Select(pi => pi.ParameterType).ToArray());
 
                 if (genericArguments.Any())
                 {
                     interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
                 }
 
-                if (methodParameters.Length > 0)
-                {
-                    var closureTypeBuilder = createClosureTypeFunc(@interface, method);
-                    var closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+                Type closureFinalType = null;
 
-                    var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
-                    var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+                if (parameters.Length > 0)
+                {
+                    TypeBuilder closureTypeBuilder = createClosureTypeFunc(@interface, method);
+                    closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+                }
+
+                var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
+                var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+                var finalDelegateMethod = delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
+
+                if (parameters.Length > 0)
+                {
 
                     // Create interface implementation
-                    EmitMethodImplementationWithParameters(@interface, method, interfaceImplementationMethodBuilder, closureFinalType, delegateMethodBuilder,  parentType);
+                    EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, closureFinalType, finalDelegateMethod, parentType);
                 }
                 else
                 {
-                    EmitMethodImplementationWithoutParameters(method, interfaceImplementationMethodBuilder);
+                    EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, null, finalDelegateMethod, parentType);
                 }
 
                 // Since we're implementing an interface
@@ -226,26 +196,23 @@ namespace ExpressionPlayground
             return usedNames;
         }
 
-        private ImplementInterfaceMethodResult ImplementInterfaceMethods(
-            TypeBuilder typeBuilder,
-            IEnumerable<Type> interfaces,
-            ImplementInterfaceMethodResult? previousResult = null)
+        private ImplementInterfaceMethodResult ImplementInterfaceMethods(TypeBuilder typeBuilder, IEnumerable<Type> interfaces, Type parentType)
         {
-            var result = previousResult ?? ImplementInterfaceMethodResult.Empty;
+            var result = ImplementInterfaceMethodResult.Empty;
 
             foreach (var interfaceType in interfaces)
             {
                 result = result.AddUsedNames(
                     ImplementInterfaceMethod(
-                        typeBuilder, 
-                        interfaceType, 
+                        typeBuilder,
+                        interfaceType,
                         result.NamesUsed,
-                        this.parentType,
+                        parentType,
                         (@interface, method) =>
-                        {
-                            var closureTypeName = this.closureTypeNameSelector(@interface, method, this.namespaceName);
-                            return ClosureBuilder.CreateClosureTypeBuilder(this.moduleBuilder, closureTypeName);
-                        }));
+                            {
+                                var closureTypeName = this.ClosureTypeNameSelector(@interface, method, this.Namespace);
+                                return ClosureBuilder.CreateClosureTypeBuilder(this.ModuleBuilder, closureTypeName);
+                            }));
                 result = result.AddImplementedInterface(interfaceType);
             }
 

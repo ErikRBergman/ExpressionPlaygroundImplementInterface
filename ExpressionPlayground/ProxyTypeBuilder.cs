@@ -10,6 +10,7 @@ namespace ExpressionPlayground
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+    using System.Threading.Tasks;
 
     using ExpressionPlayground.Closures;
     using ExpressionPlayground.Constructors;
@@ -69,9 +70,12 @@ namespace ExpressionPlayground
             var generator = methodBuilder.GetILGenerator();
             var parameters = sourceMethodInfo.GetParameters();
 
-            if (closureFinalType != null)
-            {
+            var hasParameters = parameters.Length != 0;
+            var hasReturnValue = sourceMethodInfo.ReturnType.GenericTypeArguments.Length == 1;
 
+            // only emit instantiating the closure if it's needed
+            if (hasParameters)
+            {
                 var closureVariable = generator.DeclareLocal(closureFinalType);
                 var closureConstructor = closureFinalType.GetConstructors().Single();
 
@@ -91,36 +95,68 @@ namespace ExpressionPlayground
                 generator.Emit(OpCodes.Stloc, closureVariable);
             }
 
-            // Call this.ExecuteAsync
+            // Start of call to this.ExecuteAsync
             generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
 
-            // First parameter to the Func<,,> constructor
-            generator.Emit(OpCodes.Ldloc_0);
+            // With no parameters, the closure does not need to be pushed either
+            if (hasParameters)
+            {
+                // First parameter to the Func<*> constructor
+                generator.Emit(OpCodes.Ldloc_0);
+            }
 
-            // Second parameter to the Func<,,> constructor
+            // Second parameter to the Func<*> constructor
             // get the address of this.DelegateMethodAsync
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldftn, finalDelegateMethod);
 
-            // Instantiate the Func<,,>
-            var delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
-            var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
-            generator.Emit(OpCodes.Newobj, delegateConstructor);
+            // Instantiate the Func<*>
+            Type delegateType;
+
+            if (hasParameters)
+            {
+                delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
+                var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+                generator.Emit(OpCodes.Newobj, delegateConstructor);
+            }
+            else
+            {
+
+                //var x = new Func<IInterfaceToImplement, Task<string>();
+
+                delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
+                var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+                generator.Emit(OpCodes.Newobj, delegateConstructor);
+            }
 
             var executeAsyncMethods = GetExecuteAsyncMethods(parentType);
 
             MethodInfo executeAsync = null;
 
-            // If it has a return value
-            if (sourceMethodInfo.ReturnType.GenericTypeArguments.Length == 1)
+            var executeAsyncGenericParameters = ImmutableArray<Type>.Empty;
+
+            if (hasParameters)
             {
-                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters && method.GetParameters().Length == 2);
-                executeAsync = executeAsync.MakeGenericMethod(closureFinalType, sourceMethodInfo.ReturnType.GenericTypeArguments[0]);
+                executeAsyncGenericParameters = executeAsyncGenericParameters.Add(closureFinalType);
+            }
+
+            if (hasReturnValue)
+            {
+                executeAsyncGenericParameters = executeAsyncGenericParameters.Add(sourceMethodInfo.ReturnType.GenericTypeArguments[0]);
+                executeAsyncMethods = executeAsyncMethods.Where(method => method.ReturnType.ContainsGenericParameters);
             }
             else
             {
-                executeAsync = executeAsyncMethods.Single(method => method.ReturnType.ContainsGenericParameters == false && method.GetParameters().Length == 2);
-                executeAsync = executeAsync.MakeGenericMethod(closureFinalType);
+                executeAsyncMethods = executeAsyncMethods.Where(method => !method.ReturnType.ContainsGenericParameters);
+            }
+
+            var executeAsyncParameterCount = 1 + (hasParameters ? 1 : 0);
+
+            executeAsync = executeAsyncMethods.Single(method => method.GetParameters().Length == executeAsyncParameterCount);
+
+            if (executeAsyncGenericParameters.Length > 0)
+            {
+                executeAsync = executeAsync.MakeGenericMethod(executeAsyncGenericParameters.ToArray());
             }
 
             generator.EmitCall(OpCodes.Call, executeAsync, null); // call the inner method

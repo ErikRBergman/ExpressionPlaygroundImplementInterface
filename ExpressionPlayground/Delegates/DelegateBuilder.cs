@@ -1,6 +1,7 @@
 ﻿namespace ExpressionPlayground.Delegates
 {
     using System;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -27,12 +28,19 @@
         {
             var genericArguments = methodInfo.GetGenericArguments();
 
+            var delegateParameters = ImmutableArray<Type>.Empty;
+
+            if (closureFinalType != null)
+            {
+                delegateParameters = delegateParameters.Add(closureFinalType);
+            }
+
             // Create delegate method - to be able to pass parameters 
             var delegateMethodBuilder = typeBuilder.DefineMethod(
                 delegateMethodName,
                 MethodAttributes.Private,
                 methodInfo.ReturnType,
-                new[] { closureFinalType, interfaceToImplement });
+                delegateParameters.Add(interfaceToImplement).ToArray());
 
             if (genericArguments.Length > 0)
             {

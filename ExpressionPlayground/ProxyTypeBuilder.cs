@@ -18,6 +18,8 @@ namespace ExpressionPlayground
     using ExpressionPlayground.Extensions;
     using ExpressionPlayground.Validation;
 
+    using Sigil.NonGeneric;
+
     public class ProxyTypeBuilder
     {
         public ProxyTypeBuilder()
@@ -56,7 +58,20 @@ namespace ExpressionPlayground
             var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces(), parentType);
 
             var generatedType = typeBuilder.CreateType();
-            return new GeneratedProxy(generatedType, result.InterfacesImplemented);
+
+            var factory = GenerateFactoryDelegate(interfaceToImplement, generatedType);
+
+            return new GeneratedProxy(generatedType, result.InterfacesImplemented, factory);
+        }
+
+        private static Delegate GenerateFactoryDelegate(Type interfaceToImplement, Type generatedType)
+        {
+            var factoryBuilder = Emit.NewDynamicMethod(interfaceToImplement, new[] { interfaceToImplement });
+            factoryBuilder.LoadArgument(0);
+            factoryBuilder.NewObject(generatedType, interfaceToImplement);
+            factoryBuilder.Return();
+            var factory = factoryBuilder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
+            return factory;
         }
 
         private static void EmitMethodImplementation(

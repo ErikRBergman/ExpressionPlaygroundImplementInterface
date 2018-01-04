@@ -17,12 +17,14 @@
 
         private static async Task MainAsync(string[] args)
         {
-            var g = new ProxyTypeBuilder();
-            var proxyBuilder = g.GenerateProxy<IInterfaceToImplement>();
+            var proxyTypeBuilder = new ProxyTypeBuilder();
+            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<IInterfaceToImplement>();
+
+            DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 
             var testImplementation = new TestImplementation();
 
-            var proxy = (IInterfaceToImplement)Activator.CreateInstance(proxyBuilder.GeneratedType, testImplementation);
+            var proxy = (IInterfaceToImplement)Activator.CreateInstance(proxyTypeInformation.GeneratedType, testImplementation);
 
             var validator = Validator.Default;
 
@@ -51,11 +53,14 @@
             await proxy.NoResult_Parameters(5, "Five");
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Parameters), mc.MethodName) == 0);
 
-            await proxy.NoResult_Generic_Parameters(1, 2, "haj");
-            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_Parameters), mc.MethodName) == 0);
-
             await proxy.NoResult_NoParameters();
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_NoParameters), mc.MethodName) == 0);
+
+            var result_noparameters = await proxy.Result_NoParameters();
+            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.Result_NoParameters), mc.MethodName) == 0);
+
+            await proxy.NoResult_Generic_Parameters(1, 2, "haj");
+            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_Parameters), mc.MethodName) == 0);
 
             await proxy.NoResult_Generic_NoParameters<string>();
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_NoParameters), mc.MethodName) == 0);
@@ -63,7 +68,6 @@
             var result = proxy.Result_Generic_NoParameters<string>();
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.Result_Generic_NoParameters), mc.MethodName) == 0);
             
-            DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
         }
 
     }

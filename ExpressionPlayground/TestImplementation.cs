@@ -25,6 +25,12 @@
             return Task.FromResult(4321);
         }
 
+        public Task<int> Result_NoParameters()
+        {
+            this.methodCalls.Add(new TestMethodCall(nameof(this.Result_NoParameters)));
+            return Task.FromResult(4321);
+        }
+
         public Task<ThreeGenericParameter<T1, T2, T3>> GenericResult_GenericParameters<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
         {
             this.methodCalls.Add(new TestMethodCall(nameof(this.GenericResult_GenericParameters), t1, t2, t3));
@@ -67,7 +73,7 @@
 
         public Task<int> Result_Generic_NoParameters<T1>()
         {
-            this.methodCalls.Add(new TestMethodCall(nameof(this.Result_GenericParameter), typeof(T1)));
+            this.methodCalls.Add(new TestMethodCall(nameof(this.Result_Generic_NoParameters), typeof(T1)));
             return Task.FromResult(321);
         }
 

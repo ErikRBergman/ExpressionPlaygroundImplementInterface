@@ -6,8 +6,6 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-    using ExpressionPlayground.Extensions;
-
     internal static class DelegateBuilder
     {
         /// <summary>
@@ -35,7 +33,7 @@
                 delegateParameters = delegateParameters.Add(closureFinalType);
             }
 
-            // Create delegate method - to be able to pass parameters 
+            // Create delegate method - to be able to pass parameters
             var delegateMethodBuilder = typeBuilder.DefineMethod(
                 delegateMethodName,
                 MethodAttributes.Private,
@@ -48,7 +46,7 @@
             }
 
             // Get arguments from the closure type
-            FieldInfo[] closureFields = Array.Empty<FieldInfo>();
+            var closureFields = Array.Empty<FieldInfo>();
 
             if (closureFinalType != null)
             {
@@ -56,7 +54,6 @@
             }
 
             var parameters = methodInfo.GetParameters();
-
             var generator = delegateMethodBuilder.GetILGenerator();
 
             return GenerateDelegateMethodIL(methodInfo, generator, parameters, closureFields, delegateMethodBuilder);
@@ -69,7 +66,14 @@
             FieldInfo[] closureFields,
             MethodBuilder delegateMethodBuilder)
         {
-            generator.Emit(OpCodes.Ldarg_2); // get the service parameter from the delegate
+            if (parameters.Length == 0)
+            {
+                generator.Emit(OpCodes.Ldarg_1); // get the service parameter from the delegate
+            }
+            else
+            {
+                generator.Emit(OpCodes.Ldarg_2); // get the service parameter from the delegate
+            }
 
             for (var i = 0; i < parameters.Length; i++)
             {

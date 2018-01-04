@@ -7,6 +7,7 @@ namespace ExpressionPlayground
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -122,8 +123,8 @@ namespace ExpressionPlayground
 
             // Second parameter to the Func<*> constructor
             // get the address of this.DelegateMethodAsync
-            generator.Emit(OpCodes.Ldarg_0);
-            generator.Emit(OpCodes.Ldftn, finalDelegateMethod);
+            generator.Emit(OpCodes.Ldarg_0); // this.
+            generator.Emit(OpCodes.Ldftn, finalDelegateMethod); // the delegate method
 
             // Instantiate the Func<*>
             Type delegateType;
@@ -131,18 +132,15 @@ namespace ExpressionPlayground
             if (hasParameters)
             {
                 delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
-                var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
-                generator.Emit(OpCodes.Newobj, delegateConstructor);
             }
             else
             {
-
-                //var x = new Func<IInterfaceToImplement, Task<string>();
-
                 delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
-                var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
-                generator.Emit(OpCodes.Newobj, delegateConstructor);
             }
+
+            var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+            generator.Emit(OpCodes.Newobj, delegateConstructor);
+
 
             var executeAsyncMethods = GetExecuteAsyncMethods(parentType);
 
@@ -178,7 +176,7 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
-        private static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
+        public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
             return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
         }
@@ -206,45 +204,57 @@ namespace ExpressionPlayground
 
                 var genericArgumentNames = genericArguments.Select(pi => pi.Name).ToArray();
 
-                var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
-                    method.Name,
-                    MethodAttributes.Public | MethodAttributes.Virtual,
-                    method.ReturnType,
-                    parameters.Select(pi => pi.ParameterType).ToArray());
+                var finalClosureType = GetFinalClosureType(@interface, createClosureTypeFunc, parameters, method, genericArguments);
+                var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, method, finalClosureType, genericArguments);
 
-                if (genericArguments.Any())
-                {
-                    interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
-                }
+                //Methods.MethodBuilder.EmitMethodImplementation(@interface, method, typeBuilder, genericArguments, finalClosureType, finalDelegateMethod, parentType);
 
-                Type closureFinalType = null;
-
-                if (parameters.Length > 0)
-                {
-                    TypeBuilder closureTypeBuilder = createClosureTypeFunc(@interface, method);
-                    closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
-                }
-
-                var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
-                var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
-                var finalDelegateMethod = delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
-
-                if (parameters.Length > 0)
-                {
-
-                    // Create interface implementation
-                    EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, closureFinalType, finalDelegateMethod, parentType);
-                }
-                else
-                {
-                    EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, null, finalDelegateMethod, parentType);
-                }
-
-                // Since we're implementing an interface
-                typeBuilder.DefineMethodOverride(interfaceImplementationMethodBuilder, method);
+                var interfaceImplementationMethodBuilder = CreateMethodUsingILGenerator(typeBuilder, @interface, parentType, method, parameters, genericArguments, genericArgumentNames, finalClosureType, finalDelegateMethod);
+                //typeBuilder.DefineMethodOverride(interfaceImplementationMethodBuilder, method);
             }
 
             return usedNames;
+        }
+
+        private static MethodBuilder CreateMethodUsingILGenerator(TypeBuilder typeBuilder, Type @interface, Type parentType, MethodInfo method, ParameterInfo[] parameters, Type[] genericArguments, string[] genericArgumentNames, Type finalClosureType, MethodInfo finalDelegateMethod)
+        {
+            if (method.Name == "Result_NoParameters")
+            {
+            }
+
+            var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
+                method.Name,
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Final,
+                method.ReturnType,
+                parameters.Select(pi => pi.ParameterType).ToArray());
+
+            if (genericArguments.Any())
+            {
+                interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
+            }
+
+            EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, finalClosureType, finalDelegateMethod, parentType);
+            return interfaceImplementationMethodBuilder;
+        }
+
+        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
+        {
+            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
+            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
+        }
+
+        private static Type GetFinalClosureType(Type @interface, Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc, ParameterInfo[] parameters, MethodInfo method, Type[] genericArguments)
+        {
+            Type closureFinalType = null;
+
+            if (parameters.Length > 0)
+            {
+                TypeBuilder closureTypeBuilder = createClosureTypeFunc(@interface, method);
+                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+            }
+
+            return closureFinalType;
         }
 
         private ImplementInterfaceMethodResult ImplementInterfaceMethods(TypeBuilder typeBuilder, IEnumerable<Type> interfaces, Type parentType)

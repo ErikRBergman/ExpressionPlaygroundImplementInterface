@@ -46,6 +46,11 @@
             throw new System.NotImplementedException();
         }
 
+        public Task<int> Result_NoParameters()
+        {
+            throw new System.NotImplementedException();
+        }
+
         public Task<ThreeGenericParameter<T1, T2, T3>> GenericResult_GenericParameters<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
         {
             return Task.FromResult(
@@ -64,12 +69,6 @@
             return Task.CompletedTask;
         }
 
-        public Task NoResult_NoParameters_Delegate(IInterfaceToImplement innerService)
-        {
-            return innerService.NoResult_NoParameters();
-        }
-
-
         public Task NoResult_Generic_Parameters<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
         {
             return Task.CompletedTask;
@@ -80,10 +79,18 @@
             return this.ExecuteAsync(this.NoResult_NoParameters_Delegate);
         }
 
+        private Task NoResult_NoParameters_Delegate(IInterfaceToImplement innerService)
+        {
+            return innerService.NoResult_NoParameters();
+        }
+
         public Task NoResult_Generic_NoParameters<T1>()
         {
             return Task.CompletedTask;
         }
+
+
+
 
         private Task<Model> a_delegate(GetModelClass parameter, IInterfaceToImplement innerService)
         {

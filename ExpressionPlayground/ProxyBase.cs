@@ -1,4 +1,5 @@
-﻿namespace ExpressionPlayground
+﻿// ReSharper disable UnusedMember.Global
+namespace ExpressionPlayground
 {
     using System;
     using System.Threading.Tasks;
@@ -10,6 +11,50 @@
         public ProxyBase(TInterface inner)
         {
             this.inner = inner;
+        }
+
+        protected void Execute(Action<TInterface> action)
+        {
+            try
+            {
+                action(this.inner);
+            }
+            finally
+            {
+            }
+        }
+
+        protected TResult Execute<TResult>(Func<TInterface, TResult> func)
+        {
+            try
+            {
+                return func(this.inner);
+            }
+            finally
+            {
+            }
+        }
+
+        protected void Execute<TParameter>(TParameter parameter, Action<TParameter, TInterface> action)
+        {
+            try
+            {
+                action(parameter, this.inner);
+            }
+            finally
+            {
+            }
+        }
+
+        protected TResult Execute<TParameter, TResult>(TParameter parameter, Func<TParameter, TInterface, TResult> func)
+        {
+            try
+            {
+                return func(parameter, this.inner);
+            }
+            finally
+            {
+            }
         }
 
         protected async Task ExecuteAsync(Func<TInterface, Task> func)

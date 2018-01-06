@@ -10,6 +10,7 @@ namespace ExpressionPlayground
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+    using System.Threading.Tasks;
 
     using ExpressionPlayground.Closures;
     using ExpressionPlayground.Constructors;
@@ -69,10 +70,10 @@ namespace ExpressionPlayground
 
         public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
-            return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
+            return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
         }
 
-        public GenerateProxyResult GenerateProxy(Type interfaceToImplement)
+        public GenerateProxyResult GenerateProxy(Type interfaceToImplement, string typeName = null)
         {
             var validator = Validator.Default;
 
@@ -80,7 +81,7 @@ namespace ExpressionPlayground
 
             var parentType = this.proxyBaseTypeFactoryFunc(interfaceToImplement);
 
-            var typeName = this.ProxyTypeNameSelectorFunc(interfaceToImplement, this.Namespace);
+            typeName = typeName ?? this.ProxyTypeNameSelectorFunc(interfaceToImplement, this.Namespace);
 
             var typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public, parentType);
             typeBuilder.AddInterfaceImplementation(interfaceToImplement);
@@ -96,7 +97,7 @@ namespace ExpressionPlayground
             return new GenerateProxyResult(generatedType, result.InterfacesImplemented, factory);
         }
 
-        private static MethodBuilder CreateMethodUsingILGenerator(
+        private static MethodBuilder CreateMethod(
             TypeBuilder typeBuilder,
             Type @interface,
             Type parentType,
@@ -107,10 +108,6 @@ namespace ExpressionPlayground
             Type finalClosureType,
             MethodInfo finalDelegateMethod)
         {
-            if (method.Name == "Result_NoParameters")
-            {
-            }
-
             var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                 method.Name,
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Final,
@@ -120,6 +117,15 @@ namespace ExpressionPlayground
             if (genericArguments.Any())
             {
                 interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
+            }
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var builder = interfaceImplementationMethodBuilder.DefineParameter(i + 1, parameters[i].Attributes, parameters[i].Name);
+                if (parameters[i].Attributes.HasFlag(ParameterAttributes.HasDefault))
+                {
+                    builder.SetConstant(parameters[i].DefaultValue);
+                }
             }
 
             EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, finalClosureType, finalDelegateMethod, parentType);
@@ -138,7 +144,25 @@ namespace ExpressionPlayground
             var parameters = sourceMethodInfo.GetParameters();
 
             var hasParameters = parameters.Length != 0;
-            var hasReturnValue = sourceMethodInfo.ReturnType.GenericTypeArguments.Length == 1;
+
+
+            var isAsyncMethod = typeof(Task).IsAssignableFrom(sourceMethodInfo.ReturnType);
+
+            var returnValueGenericArguments = sourceMethodInfo.ReturnType.GenericTypeArguments;
+            var hasGenericReturnValueArguments = returnValueGenericArguments.Length != 0;
+
+            var hasAsyncReturnValue = isAsyncMethod && returnValueGenericArguments.Length == 1;
+            var hasNonAsyncReturnValue = !isAsyncMethod && typeof(void) != sourceMethodInfo.ReturnType;
+            var hasReturnValue = hasAsyncReturnValue || hasNonAsyncReturnValue;
+            var returnsVoid = sourceMethodInfo.ReturnType == typeof(void);
+
+            Type returnType = sourceMethodInfo.ReturnType;
+
+            if (hasReturnValue && isAsyncMethod)
+            {
+                returnType = sourceMethodInfo.ReturnType.GenericTypeArguments[0];
+            }
+
 
             // only emit instantiating the closure if it's needed
             if (hasParameters)
@@ -178,52 +202,82 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ldftn, finalDelegateMethod); // the delegate method
 
             // Instantiate the Func<*>
-            Type delegateType;
-
-            if (hasParameters)
-            {
-                delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
-            }
-            else
-            {
-                delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
-            }
+            var delegateType = GetDelegateType(interfaceType, sourceMethodInfo, closureFinalType, hasParameters, returnsVoid);
 
             var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
             generator.Emit(OpCodes.Newobj, delegateConstructor);
 
-            var executeAsyncMethods = GetExecuteAsyncMethods(parentType);
+            var proxyMethods = GetExecuteAsyncMethods(parentType);
 
             MethodInfo executeAsync = null;
 
-            var executeAsyncGenericParameters = ImmutableArray<Type>.Empty;
+            var proxyMethodGenericParameters = ImmutableArray<Type>.Empty;
 
             if (hasParameters)
             {
-                executeAsyncGenericParameters = executeAsyncGenericParameters.Add(closureFinalType);
+                proxyMethodGenericParameters = proxyMethodGenericParameters.Add(closureFinalType);
             }
 
             if (hasReturnValue)
             {
-                executeAsyncGenericParameters = executeAsyncGenericParameters.Add(sourceMethodInfo.ReturnType.GenericTypeArguments[0]);
-                executeAsyncMethods = executeAsyncMethods.Where(method => method.ReturnType.ContainsGenericParameters);
+                proxyMethodGenericParameters = proxyMethodGenericParameters.Add(returnType);
+
+                if (hasGenericReturnValueArguments)
+                {
+                    proxyMethods = proxyMethods.Where(method => method.ReturnType.ContainsGenericParameters);
+                }
+
+                proxyMethods = proxyMethods.Where(method => method.ReturnType != typeof(void) && method.ReturnType != typeof(Task));
             }
             else
             {
-                executeAsyncMethods = executeAsyncMethods.Where(method => !method.ReturnType.ContainsGenericParameters);
+                proxyMethods = proxyMethods.Where(method => method.ReturnType == typeof(void) || method.ReturnType == typeof(Task));
             }
+
+            // get Task<> return type if needed
+            proxyMethods = proxyMethods.Where(method => typeof(Task).IsAssignableFrom(method.ReturnType) == isAsyncMethod);
 
             var executeAsyncParameterCount = 1 + (hasParameters ? 1 : 0);
 
-            executeAsync = executeAsyncMethods.Single(method => method.GetParameters().Length == executeAsyncParameterCount);
+            proxyMethods = proxyMethods.Where(method => method.GetParameters().Length == executeAsyncParameterCount);
 
-            if (executeAsyncGenericParameters.Length > 0)
+            executeAsync = proxyMethods.Single();
+
+            if (proxyMethodGenericParameters.Length > 0)
             {
-                executeAsync = executeAsync.MakeGenericMethod(executeAsyncGenericParameters.ToArray());
+                executeAsync = executeAsync.MakeGenericMethod(proxyMethodGenericParameters.ToArray());
             }
 
             generator.EmitCall(OpCodes.Call, executeAsync, null); // call the inner method
             generator.Emit(OpCodes.Ret);
+        }
+
+        private static Type GetDelegateType(Type interfaceType, MethodInfo sourceMethodInfo, Type closureFinalType, bool hasParameters, bool returnsVoid)
+        {
+            Type delegateType;
+            if (hasParameters)
+            {
+                if (!returnsVoid)
+                {
+                    delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
+                }
+                else
+                {
+                    delegateType = typeof(Action<,>).MakeGenericType(closureFinalType, interfaceType);
+                }
+            }
+            else
+            {
+                if (!returnsVoid)
+                {
+                    delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
+                }
+                else
+                {
+                    delegateType = typeof(Action<>).MakeGenericType(interfaceType);
+                }
+            }
+            return delegateType;
         }
 
         private static Delegate GenerateFactoryDelegate(Type interfaceToImplement, Type generatedType)
@@ -281,6 +335,11 @@ namespace ExpressionPlayground
         {
             foreach (var method in @interface.GetMethods())
             {
+                if (method.Name == "Result_Parameters")
+                {
+
+                }
+
                 var parameters = method.GetParameters();
                 var genericArguments = method.GetGenericArguments();
 
@@ -299,7 +358,7 @@ namespace ExpressionPlayground
                 var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, method, finalClosureType, genericArguments);
 
                 // Methods.MethodBuilder.EmitMethodImplementation(@interface, method, typeBuilder, genericArguments, finalClosureType, finalDelegateMethod, parentType);
-                var interfaceImplementationMethodBuilder = CreateMethodUsingILGenerator(
+                var interfaceImplementationMethodBuilder = CreateMethod(
                     typeBuilder,
                     @interface,
                     parentType,

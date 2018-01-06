@@ -33,16 +33,29 @@
                 delegateParameters = delegateParameters.Add(closureFinalType);
             }
 
+            delegateParameters = delegateParameters.Add(interfaceToImplement);
+
             // Create delegate method - to be able to pass parameters
             var delegateMethodBuilder = typeBuilder.DefineMethod(
                 delegateMethodName,
                 MethodAttributes.Private,
                 methodInfo.ReturnType,
-                delegateParameters.Add(interfaceToImplement).ToArray());
+                delegateParameters.ToArray());
 
             if (genericArguments.Length > 0)
             {
                 delegateMethodBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
+            }
+
+            if (delegateParameters.Length == 1)
+            {
+                var builder = delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "closureReference");
+            }
+            else
+            {
+                var builder = delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "innerInterfaceReference");
+                builder = delegateMethodBuilder.DefineParameter(2, ParameterAttributes.None, "innerInterfaceReference");
+
             }
 
             // Get arguments from the closure type

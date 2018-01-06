@@ -1,6 +1,7 @@
 ﻿namespace ExpressionPlayground.Constructors
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -44,17 +45,17 @@
             GenerateParentTypeConstructorCall(getIL, parameters, baseConstructor);
         }
 
-        private static void GenerateParentTypeConstructorCall(ILGenerator getIL, ParameterInfo[] parameters, ConstructorInfo baseConstructor)
+        private static void GenerateParentTypeConstructorCall(ILGenerator generator, IReadOnlyCollection<ParameterInfo> parameters, ConstructorInfo baseConstructor)
         {
-            getIL.Emit(OpCodes.Ldarg_0);
-            for (var i = 1; i <= parameters.Length; ++i)
+            generator.Emit(OpCodes.Ldarg_0);
+            for (var i = 1; i <= parameters.Count; ++i)
             {
-                getIL.Emit(OpCodes.Ldarg, i);
+                generator.Emit(OpCodes.Ldarg, i);
             }
 
-            getIL.Emit(OpCodes.Call, baseConstructor);
+            generator.Emit(OpCodes.Call, baseConstructor);
 
-            getIL.Emit(OpCodes.Ret);
+            generator.Emit(OpCodes.Ret);
         }
     }
 }

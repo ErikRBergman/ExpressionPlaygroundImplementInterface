@@ -24,7 +24,7 @@
 
             var testImplementation = new TestImplementation();
 
-            var proxy = (IInterfaceToImplement)Activator.CreateInstance(proxyTypeInformation.GeneratedType, testImplementation);
+            var proxy = proxyTypeInformation.Factory(testImplementation);
 
             var validator = Validator.Default;
 

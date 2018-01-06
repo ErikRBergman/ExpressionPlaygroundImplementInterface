@@ -5,7 +5,8 @@
 
     internal static class MethodInfoExtensions
     {
-        public static MethodInfo MakeGenericMethodIfNecessary(this MethodInfo methodInfo, params Type[] parameters)
+        public static MethodInfo MakeGenericMethodIfNecessary<TMI>(this TMI methodInfo, params Type[] parameters)
+            where TMI : MethodInfo
         {
             if (parameters.Length > 0)
             {

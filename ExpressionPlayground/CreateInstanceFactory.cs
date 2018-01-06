@@ -4,7 +4,6 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Xunit;
 
     public class CreateInstanceFactory
     {
@@ -76,7 +75,6 @@
             return (Func<TTypeToReturn>)CreateInstance(typeof(TTypeToInstantiate), typeof(TTypeToReturn), parameterTypes);
         }
 
-        [Fact]
         public void TestsCreateInstance()
         {
             Expression<Func<MyInnerClass>> expression = () => new MyInnerClass();

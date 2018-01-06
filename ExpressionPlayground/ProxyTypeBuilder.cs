@@ -19,7 +19,35 @@ namespace ExpressionPlayground
 
     public class ProxyTypeBuilder
     {
-        public ProxyTypeBuilder()
+        private readonly Func<Type, Type> proxyBaseTypeFactoryFunc;
+
+        public ProxyTypeBuilder(Func<Type, Type> parentTypeFactoryFunc)
+        {
+            this.proxyBaseTypeFactoryFunc = parentTypeFactoryFunc ?? throw new ArgumentNullException(nameof(parentTypeFactoryFunc));
+        }
+
+        public ProxyTypeBuilder(Type parentType) : this()
+        {
+            Validator.Default.IsNotNull(parentType, nameof(parentType));
+
+            if (parentType.ContainsGenericParameters)
+            {
+                var parentGenericArguments = parentType.GetGenericArguments();
+
+                if (parentGenericArguments.Length != 1)
+                {
+                    throw new Exception("Parent type has more than one generic argument. Use the constructor with a factory function instead.");
+                }
+
+                this.proxyBaseTypeFactoryFunc = t => parentType.MakeGenericType(t);
+            }
+            else
+            {
+                this.proxyBaseTypeFactoryFunc = t => parentType;
+            }
+        }
+
+        private ProxyTypeBuilder()
         {
             this.Namespace = this.Namespace ?? DefaultValues.DefaultTypeNamespace;
 
@@ -44,18 +72,20 @@ namespace ExpressionPlayground
             return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync");
         }
 
-        public GeneratedProxy GenerateProxy(Type interfaceToImplement)
+        public GenerateProxyResult GenerateProxy(Type interfaceToImplement)
         {
-            Validator.Default.IsNotNull(interfaceToImplement, nameof(interfaceToImplement)).IsInterface(interfaceToImplement, nameof(interfaceToImplement));
+            var validator = Validator.Default;
 
-            var parentType = typeof(ProxyBase<>).MakeGenericType(interfaceToImplement);
+            validator.IsNotNull(interfaceToImplement, nameof(interfaceToImplement)).IsInterface(interfaceToImplement, nameof(interfaceToImplement));
+
+            var parentType = this.proxyBaseTypeFactoryFunc(interfaceToImplement);
 
             var typeName = this.ProxyTypeNameSelectorFunc(interfaceToImplement, this.Namespace);
 
             var typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public, parentType);
             typeBuilder.AddInterfaceImplementation(interfaceToImplement);
 
-            DefaultConstructorGenerator.CreateSuperClassConstructorCalls(typeBuilder, parentType);
+            DefaultConstructorGenerator.CreateDefaultConstructors(typeBuilder, parentType);
 
             var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces(), parentType);
 
@@ -63,7 +93,7 @@ namespace ExpressionPlayground
 
             var factory = GenerateFactoryDelegate(interfaceToImplement, generatedType);
 
-            return new GeneratedProxy(generatedType, result.InterfacesImplemented, factory);
+            return new GenerateProxyResult(generatedType, result.InterfacesImplemented, factory);
         }
 
         private static MethodBuilder CreateMethodUsingILGenerator(

@@ -2,11 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Reflection.Emit;
 
-    public struct GeneratedProxy
+    public struct GenerateProxyResult
     {
-        public GeneratedProxy(Type generatedType, IEnumerable<Type> interfacesImplemented, Delegate factory)
+        public GenerateProxyResult(Type generatedType, IEnumerable<Type> interfacesImplemented, Delegate factory)
         {
             this.GeneratedType = generatedType;
             this.InterfacesImplemented = interfacesImplemented;
@@ -20,9 +19,9 @@
         public Delegate Factory { get; }
     }
 
-    public struct GeneratedProxy<TInterface>
+    public struct GenerateProxyResult<TInterface>
     {
-        public GeneratedProxy(Type generatedType, IEnumerable<Type> interfacesImplemented, Func<TInterface, TInterface> factory)
+        public GenerateProxyResult(Type generatedType, IEnumerable<Type> interfacesImplemented, Func<TInterface, TInterface> factory)
         {
             this.GeneratedType = generatedType;
             this.InterfacesImplemented = interfacesImplemented;

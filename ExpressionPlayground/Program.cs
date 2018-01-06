@@ -1,6 +1,5 @@
 ﻿namespace ExpressionPlayground
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
@@ -17,7 +16,7 @@
 
         private static async Task MainAsync(string[] args)
         {
-            var proxyTypeBuilder = new ProxyTypeBuilder();
+            var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>));
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<IInterfaceToImplement>();
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
@@ -68,6 +67,9 @@
             var result = proxy.Result_Generic_NoParameters<string>();
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.Result_Generic_NoParameters), mc.MethodName) == 0);
             
+            // Todo: Methods returning void or non Task argument, including generic arguments
+            // Todo: Methods with variable arguments
+            // Todo: Generic interface
         }
 
     }

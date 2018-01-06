@@ -6,11 +6,11 @@
 
     public static class ProxyTypeBuilderExtensions
     {
-        public static GeneratedProxy<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder)
+        public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder)
         {
-            var generatedType =  proxyTypeBuilder.GenerateProxy(typeof(TInterfaceType));
+            var generatedType = proxyTypeBuilder.GenerateProxy(typeof(TInterfaceType));
 
-            return new GeneratedProxy<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factory);
+            return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factory);
         }
 
         public static ProxyTypeBuilder ModuleBuilder(this ProxyTypeBuilder proxyTypeBuilder, Func<AssemblyBuilder, ModuleBuilder> selectBuilder)

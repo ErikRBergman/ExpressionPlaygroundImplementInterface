@@ -57,7 +57,7 @@
     <Compile Include="Delegates\DelegateBuilder.cs" />
     <Compile Include="Extensions\MethodInfoExtensions.cs" />
     <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
-    <Compile Include="GeneratedProxy.cs" />
+    <Compile Include="GenerateProxyResult.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />

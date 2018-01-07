@@ -1,8 +1,10 @@
-﻿namespace ExpressionPlayground.Extensions
+﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
     using System.Reflection;
     using System.Reflection.Emit;
+
+    using Serpent.InterfaceProxy;
 
     public static class ProxyTypeBuilderExtensions
     {
@@ -11,12 +13,6 @@
             var generatedType = proxyTypeBuilder.GenerateProxy(typeof(TInterfaceType));
 
             return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factory);
-        }
-
-        public static ProxyTypeBuilder ModuleBuilder(this ProxyTypeBuilder proxyTypeBuilder, Func<AssemblyBuilder, ModuleBuilder> selectBuilder)
-        {
-            proxyTypeBuilder.ModuleBuilder(selectBuilder(DefaultValues.DefaultAssemblyBuilder));
-            return proxyTypeBuilder;
         }
 
         public static ProxyTypeBuilder Namespace(this ProxyTypeBuilder proxyTypeBuilder, string @namespace)
@@ -42,6 +38,5 @@
             proxyTypeBuilder.ProxyTypeNameSelectorFunc = proxyTypeNameSelectorFunc;
             return proxyTypeBuilder;
         }
-
     }
 }

@@ -1,5 +1,7 @@
 ﻿// ReSharper disable UnusedMember.Global
-namespace ExpressionPlayground
+// ReSharper disable StyleCop.SA1409
+// ReSharper disable RedundantEmptyFinallyBlock
+namespace ExpressionPlayground.Test
 {
     using System;
     using System.Threading.Tasks;

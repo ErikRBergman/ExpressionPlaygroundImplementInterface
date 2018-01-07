@@ -34,41 +34,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Serpent.Common.BaseTypeExtensions, Version=0.1.6465.19047, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Serpent.Common.BaseTypeExtensions.0.1.6465.19047\lib\net452\Serpent.Common.BaseTypeExtensions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Immutable.1.2.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-    </Reference>
     <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Closures\ClosureBuilder.cs" />
-    <Compile Include="Constructors\DefaultConstructorGenerator.cs" />
     <Compile Include="Factories\CreateInstanceFactory.cs" />
-    <Compile Include="DefaultValues.cs" />
-    <Compile Include="Delegates\DelegateBuilder.cs" />
-    <Compile Include="Extensions\DictionaryExtensions.cs" />
-    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
-    <Compile Include="Extensions\MethodInfoExtensions.cs" />
-    <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
-    <Compile Include="GenerateProxyResult.cs" />
-    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Test\Interfaces\IGenericInterface.cs" />
-    <Compile Include="ImplementInterfaceMethodResult.cs" />
-    <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
-    <Compile Include="ExpressionHelper.cs" />
     <Compile Include="Test\Interfaces\ITestInterface.cs" />
-    <Compile Include="ProxyTypeBuilder.cs" />
     <Compile Include="MockTemplate.cs" />
     <Compile Include="Test\Model.cs" />
     <Compile Include="Test\Implementation\TestInterfaceImplementation.cs" />
@@ -76,8 +48,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Test\ProxyBase.cs" />
     <Compile Include="Test\TestMethodCall.cs" />
-    <Compile Include="Types\TypeSubstitutor.cs" />
-    <Compile Include="Validation\Validator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -87,6 +57,12 @@
     <Folder Include="Attributes\" />
     <Folder Include="Helpers\" />
     <Folder Include="Methods\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Serpent.InterfaceProxy.NetFramework\Serpent.InterfaceProxy.NetFramework.csproj">
+      <Project>{3a95de7d-3b01-4ea9-b1bd-cd3ef76c49ab}</Project>
+      <Name>Serpent.InterfaceProxy.NetFramework</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

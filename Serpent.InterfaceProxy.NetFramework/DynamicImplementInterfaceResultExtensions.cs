@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground
+﻿namespace Serpent.InterfaceProxy
 {
     using System;
     using System.Collections.Generic;

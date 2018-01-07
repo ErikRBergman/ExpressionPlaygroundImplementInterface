@@ -1,40 +1,42 @@
-﻿namespace ExpressionPlayground
+﻿// ReSharper disable UnusedVariable
+// ReSharper disable RedundantAssignment
+namespace ExpressionPlayground
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
 
-    using ExpressionPlayground.Extensions;
     using ExpressionPlayground.Test;
+    using ExpressionPlayground.Test.Implementation;
     using ExpressionPlayground.Test.Interfaces;
-    using ExpressionPlayground.Types;
-    using ExpressionPlayground.Validation;
 
-    using Serpent.Common.BaseTypeExtensions.Collections;
+    using Serpent.InterfaceProxy;
+    using Serpent.InterfaceProxy.Extensions;
+    using Serpent.InterfaceProxy.Types;
+    using Serpent.InterfaceProxy.Validation;
 
     public class Program
     {
-        private static void Main(string[] args)
+        private static void Main()
         {
-            MainAsync(args).Wait();
+            MainAsync().Wait();
         }
 
-        private static async Task MainAsync(string[] args)
+        private static async Task MainAsync()
         {
-            var newType = SubstituteTypes<decimal, double, byte, string, float, short>(new KeyValuePair<KeyValuePair<decimal, KeyValuePair<double, byte>>, KeyValuePair<double, KeyValuePair<byte, double>>>());
+            var newType = SubstituteTypes<decimal, double, byte, string, float, short>(
+                new KeyValuePair<KeyValuePair<decimal, KeyValuePair<double, byte>>, KeyValuePair<double, KeyValuePair<byte, double>>>());
 
             var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
-            {
-                ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
-            };
+                                       {
+                                           ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
+                                               @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
+                                       };
 
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>();
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
-
             var testImplementation = new TestInterfaceImplementation();
 
             var proxy = proxyTypeInformation.Factory(testImplementation);
@@ -122,17 +124,17 @@
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_NoParameters), mc.MethodName) == 0);
 
             ////void GenericsAndVarArgs<T1>();
-            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(1, 2 ,3 ,4);
+            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(1, 2, 3, 4);
 
             // var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
 
             var complexGenericStructureObject =
                 new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>(
-                    new KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>(
-                        55, 
-                        new KeyValuePair<string, GenericStruct<int>>("fivefive", new GenericStruct<int>(1, 2))),
-                    new KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>("two", new KeyValuePair<GenericStruct<int>, string>(new GenericStruct<int>(5, 6), "fivesix")));
+                    new KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>(55, new KeyValuePair<string, GenericStruct<int>>("fivefive", new GenericStruct<int>(1, 2))),
+                    new KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>(
+                        "two",
+                        new KeyValuePair<GenericStruct<int>, string>(new GenericStruct<int>(5, 6), "fivesix")));
 
             var complexGenericStructure = proxy.ComplexGenericStructure(complexGenericStructureObject);
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
@@ -143,21 +145,22 @@
             }
 
             // Todo: Generic interfaces
+            // Todo: Return the proxy method chosen
             // Todo: Change the closure classes into structs to prevent the extra heap allocation
             // Todo: Add support for properties
 
             // Usage for the proxy:
             // * Service fabric auto repartitioning (where the idea came up)
             // * Creating decorators like the Serpent.Chain decorators - (cache, retry, aggregate, logging, performance measuring, semaphores, concurrency)
-            // 
             // Usage for implementing an interface dynamically
             // * Interface to Web API in ASP.NET Core
-            //   The service developer creates an interface and a service. The middleware implements the interface as a service, or perhaps a type inheriting from Controller and have MVC handle routing (and other services like Open API will work out of the box)
+            // The service developer creates an interface and a service. The middleware implements the interface as a service, or perhaps a type inheriting from Controller and have MVC handle routing (and other services like Open API will work out of the box)
         }
 
-        private static Type SubstituteTypes<T1, T2, T3, S1, S2, S3>(params KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>>[] parameters)
+        private static Type SubstituteTypes<T1, T2, T3, S1, S2, S3>(
+            params KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>>[] parameters)
         {
-            var substitutes = ImmutableDictionary<Type, Type>.Empty.Add(typeof(T1), typeof(S1)).Add(typeof(T2), typeof(S2)).Add(typeof(T3), typeof(S3));
+            var substitutes = new Dictionary<Type, Type>().Addf(typeof(T1), typeof(S1)).Addf(typeof(T2), typeof(S2)).Addf(typeof(T3), typeof(S3));
             var type = parameters.GetType();
             return TypeSubstitutor.GetSubstitutedType(type, substitutes);
         }

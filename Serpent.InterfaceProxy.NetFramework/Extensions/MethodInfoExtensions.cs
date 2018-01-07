@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Extensions
+﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
     using System.Reflection;

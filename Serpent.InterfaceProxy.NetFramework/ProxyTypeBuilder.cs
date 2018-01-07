@@ -1,8 +1,7 @@
 ﻿// ReSharper disable StyleCop.SA1402
-
 // ReSharper disable ParameterHidesMember
 
-namespace ExpressionPlayground
+namespace Serpent.InterfaceProxy
 {
     using System;
     using System.Collections.Generic;
@@ -12,11 +11,9 @@ namespace ExpressionPlayground
     using System.Reflection.Emit;
     using System.Threading.Tasks;
 
-    using ExpressionPlayground.Closures;
-    using ExpressionPlayground.Constructors;
-    using ExpressionPlayground.Delegates;
-    using ExpressionPlayground.Extensions;
-    using ExpressionPlayground.Validation;
+    using Serpent.InterfaceProxy.Extensions;
+    using Serpent.InterfaceProxy.ImplementationBuilders;
+    using Serpent.InterfaceProxy.Validation;
 
     public class ProxyTypeBuilder
     {
@@ -27,7 +24,8 @@ namespace ExpressionPlayground
             this.proxyBaseTypeFactoryFunc = parentTypeFactoryFunc ?? throw new ArgumentNullException(nameof(parentTypeFactoryFunc));
         }
 
-        public ProxyTypeBuilder(Type parentType) : this()
+        public ProxyTypeBuilder(Type parentType)
+            : this()
         {
             Validator.Default.IsNotNull(parentType, nameof(parentType));
 
@@ -71,7 +69,8 @@ namespace ExpressionPlayground
 
         public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
-            return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
+            return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
         }
 
         public GenerateProxyResult GenerateProxy(Type interfaceToImplement, string typeName = null)
@@ -91,7 +90,7 @@ namespace ExpressionPlayground
 
             var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces(), parentType);
 
-            var generatedType = typeBuilder.CreateType();
+            var generatedType = typeBuilder.CreateTypeInfo();
 
             var factory = GenerateFactoryDelegate(interfaceToImplement, generatedType);
 
@@ -124,7 +123,7 @@ namespace ExpressionPlayground
                 interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
             }
 
-            for (int i = 0; i < parameters.Length; i++)
+            for (var i = 0; i < parameters.Length; i++)
             {
                 var builder = interfaceImplementationMethodBuilder.DefineParameter(i + 1, parameters[i].Attributes, parameters[i].Name);
 
@@ -132,7 +131,9 @@ namespace ExpressionPlayground
 
                 if (paramArrayAttribute != null)
                 {
-                    var attributeBuilder = new CustomAttributeBuilder(typeof(ParamArrayAttribute).GetConstructors().First(c => c.IsPublic && c.GetParameters().Length == 0), new object[0]);
+                    var attributeBuilder = new CustomAttributeBuilder(
+                        typeof(ParamArrayAttribute).GetConstructors().First(c => c.IsPublic && c.GetParameters().Length == 0),
+                        new object[0]);
                     builder.SetCustomAttribute(attributeBuilder);
                 }
 
@@ -169,7 +170,7 @@ namespace ExpressionPlayground
             var hasReturnValue = hasAsyncReturnValue || hasNonAsyncReturnValue;
             var returnsVoid = sourceMethodInfo.ReturnType == typeof(void);
 
-            Type returnType = sourceMethodInfo.ReturnType;
+            var returnType = sourceMethodInfo.ReturnType;
 
             if (hasReturnValue && isAsyncMethod)
             {
@@ -190,7 +191,7 @@ namespace ExpressionPlayground
                 var closureFields = closureFinalType.GetFields();
 
                 var parameterCount = parameters.Length;
-                for (int i = 0; i < parameterCount; i++)
+                for (var i = 0; i < parameterCount; i++)
                 {
                     generator.Emit(OpCodes.Dup);
 
@@ -217,6 +218,81 @@ namespace ExpressionPlayground
             generator.Emit(OpCodes.Ret);
         }
 
+        private static Delegate GenerateFactoryDelegate(Type interfaceToImplement, Type generatedType)
+        {
+            var parameterTypes = new[] { interfaceToImplement };
+
+            var builder = new DynamicMethod("DefaultTypeFactory", interfaceToImplement, parameterTypes);
+            var generator = builder.GetILGenerator();
+            generator.Emit(OpCodes.Ldarg_0);
+
+            var constructor = generatedType.GetConstructor(parameterTypes);
+
+            if (constructor == null)
+            {
+                return null;
+            }
+
+            generator.Emit(OpCodes.Newobj, constructor);
+            generator.Emit(OpCodes.Ret);
+
+            return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
+        }
+
+        private static Type GetDelegateType(Type interfaceType, MethodInfo sourceMethodInfo, Type closureFinalType, bool hasParameters, bool returnsVoid)
+        {
+            Type delegateType;
+            if (hasParameters)
+            {
+                if (!returnsVoid)
+                {
+                    delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
+                }
+                else
+                {
+                    delegateType = typeof(Action<,>).MakeGenericType(closureFinalType, interfaceType);
+                }
+            }
+            else
+            {
+                if (!returnsVoid)
+                {
+                    delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
+                }
+                else
+                {
+                    delegateType = typeof(Action<>).MakeGenericType(interfaceType);
+                }
+            }
+
+            return delegateType;
+        }
+
+        private static Type GetFinalClosureType(
+            Type @interface,
+            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            ParameterInfo[] parameters,
+            MethodInfo method,
+            Type[] genericArguments)
+        {
+            Type closureFinalType = null;
+
+            if (parameters.Length > 0)
+            {
+                var closureTypeBuilder = createClosureTypeFunc(@interface, method);
+                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+            }
+
+            return closureFinalType;
+        }
+
+        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
+        {
+            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
+            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
+        }
+
         private static MethodInfo GetProxyMethod(
             Type closureFinalType,
             Type parentType,
@@ -227,8 +303,6 @@ namespace ExpressionPlayground
             bool isAsyncMethod)
         {
             var proxyMethods = GetExecuteAsyncMethods(parentType);
-
-            MethodInfo executeAsync = null;
 
             var proxyMethodGenericParameters = ImmutableArray<Type>.Empty;
 
@@ -260,87 +334,14 @@ namespace ExpressionPlayground
 
             proxyMethods = proxyMethods.Where(method => method.GetParameters().Length == executeAsyncParameterCount);
 
-            executeAsync = proxyMethods.Single();
+            var executeAsync = proxyMethods.Single();
 
             if (proxyMethodGenericParameters.Length > 0)
             {
                 executeAsync = executeAsync.MakeGenericMethod(proxyMethodGenericParameters.ToArray());
             }
+
             return executeAsync;
-        }
-
-        private static Type GetDelegateType(Type interfaceType, MethodInfo sourceMethodInfo, Type closureFinalType, bool hasParameters, bool returnsVoid)
-        {
-            Type delegateType;
-            if (hasParameters)
-            {
-                if (!returnsVoid)
-                {
-                    delegateType = typeof(Func<,,>).MakeGenericType(closureFinalType, interfaceType, sourceMethodInfo.ReturnType);
-                }
-                else
-                {
-                    delegateType = typeof(Action<,>).MakeGenericType(closureFinalType, interfaceType);
-                }
-            }
-            else
-            {
-                if (!returnsVoid)
-                {
-                    delegateType = typeof(Func<,>).MakeGenericType(interfaceType, sourceMethodInfo.ReturnType);
-                }
-                else
-                {
-                    delegateType = typeof(Action<>).MakeGenericType(interfaceType);
-                }
-            }
-            return delegateType;
-        }
-
-        private static Delegate GenerateFactoryDelegate(Type interfaceToImplement, Type generatedType)
-        {
-            var parameterTypes = new[] { interfaceToImplement };
-
-            var builder = new DynamicMethod("DefaultTypeFactory", interfaceToImplement, parameterTypes);
-            var generator = builder.GetILGenerator();
-            generator.Emit(OpCodes.Ldarg_0);
-
-            var constructor = generatedType.GetConstructor(parameterTypes);
-
-            if (constructor == null)
-            {
-                return null;
-            }
-
-            generator.Emit(OpCodes.Newobj, constructor);
-            generator.Emit(OpCodes.Ret);
-
-            return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
-        }
-
-        private static Type GetFinalClosureType(
-            Type @interface,
-            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc,
-            ParameterInfo[] parameters,
-            MethodInfo method,
-            Type[] genericArguments)
-        {
-            Type closureFinalType = null;
-
-            if (parameters.Length > 0)
-            {
-                var closureTypeBuilder = createClosureTypeFunc(@interface, method);
-                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
-            }
-
-            return closureFinalType;
-        }
-
-        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
-        {
-            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
-            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
-            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
         }
 
         private static ImmutableList<string> ImplementInterfaceMethod(
@@ -354,7 +355,6 @@ namespace ExpressionPlayground
             {
                 if (method.Name == "Result_Parameters")
                 {
-
                 }
 
                 var parameters = method.GetParameters();
@@ -373,14 +373,13 @@ namespace ExpressionPlayground
 
                 if (method.Name == "GenericsAndVarArgs")
                 {
-
                 }
 
                 var finalClosureType = GetFinalClosureType(@interface, createClosureTypeFunc, parameters, method, genericArguments);
                 var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, method, finalClosureType, genericArguments);
 
                 // Methods.MethodBuilder.EmitMethodImplementation(@interface, method, typeBuilder, genericArguments, finalClosureType, finalDelegateMethod, parentType);
-                var interfaceImplementationMethodBuilder = CreateMethod(
+                CreateMethod(
                     typeBuilder,
                     @interface,
                     parentType,

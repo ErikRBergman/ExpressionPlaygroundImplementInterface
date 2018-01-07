@@ -1,6 +1,5 @@
-﻿namespace ExpressionPlayground
+﻿namespace Serpent.InterfaceProxy
 {
-    using System;
     using System.Reflection;
     using System.Reflection.Emit;
 
@@ -9,12 +8,22 @@
         static DefaultValues()
         {
             var assemblyName = DefaultAssemblyBuilder.GetName().Name;
+#if NETSTANDARD2_0
+            DefaultModuleBuilder = DefaultAssemblyBuilder.DefineDynamicModule(assemblyName);
+#else
             DefaultModuleBuilder = DefaultAssemblyBuilder.DefineDynamicModule(assemblyName, assemblyName + ".dll");
+#endif
         }
 
-        public static AssemblyBuilder DefaultAssemblyBuilder { get; } = AppDomain.CurrentDomain.DefineDynamicAssembly(
+#if NETSTANDARD2_0
+        public static AssemblyBuilder DefaultAssemblyBuilder { get; } = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("Serpent.ProxyBuilder.GeneratedTypes"),
+            AssemblyBuilderAccess.Run);
+#else
+        public static AssemblyBuilder DefaultAssemblyBuilder { get; } = AssemblyBuilder.DefineDynamicAssembly(
             new AssemblyName("Serpent.ProxyBuilder.GeneratedTypes"),
             AssemblyBuilderAccess.RunAndSave);
+#endif
 
         public static ModuleBuilder DefaultModuleBuilder { get; }
 

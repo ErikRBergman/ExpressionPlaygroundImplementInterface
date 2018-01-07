@@ -1,19 +1,17 @@
-namespace ExpressionPlayground.Closures
+namespace Serpent.InterfaceProxy.ImplementationBuilders
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
 
-    using ExpressionPlayground.Types;
+    using Serpent.InterfaceProxy.Types;
 
     internal static class ClosureBuilder
     {
         public static Type CreateClosureType(TypeBuilder closureTypeBuilder, MethodInfo sourceMethodInfo)
         {
-
             var parameters = sourceMethodInfo.GetParameters();
 
             var genericArguments = sourceMethodInfo.GetGenericArguments();
@@ -21,19 +19,7 @@ namespace ExpressionPlayground.Closures
                                               ? Array.Empty<GenericTypeParameterBuilder>()
                                               : closureTypeBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
 
-           var substituteTypes = genericArguments.Zip(closureGenericArguments, (a, b) => new KeyValuePair<Type, Type>(a, b)).ToDictionary(p => p.Key, p => p.Value);
-
-            //var substituteTypes = new Dictionary<Type, Type>();
-
-            //for (var i = 0; i < closureGenericArguments.Length; i++)
-            //{
-            //    substituteTypes.Add(genericArguments[i], closureGenericArguments[i]);
-            //}
-
-            //if (subTypes.Count > 2)
-            //{
-                
-            //}
+            var substituteTypes = genericArguments.Zip(closureGenericArguments, (a, b) => new KeyValuePair<Type, Type>(a, b)).ToDictionary(p => p.Key, p => p.Value);
 
             // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)
@@ -45,9 +31,14 @@ namespace ExpressionPlayground.Closures
             }
 
             closureTypeBuilder.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.HideBySig);
-            var closureType = closureTypeBuilder.CreateType();
-
+            var closureType = closureTypeBuilder.CreateTypeInfo();
             return closureType;
+        }
+
+        public static TypeBuilder CreateClosureTypeBuilder(ModuleBuilder moduleBuilder, string closureTypeName)
+        {
+            ////return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, typeof(ValueType));
+            return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.Public | TypeAttributes.Sealed);
         }
 
         private static Type GetSubstitutedType(Type[] genericArgumentArray, Type parameterType, GenericTypeParameterBuilder[] closureGenericArguments)
@@ -57,14 +48,8 @@ namespace ExpressionPlayground.Closures
             {
                 parameterType = closureGenericArguments[index];
             }
+
             return parameterType;
         }
-
-        public static TypeBuilder CreateClosureTypeBuilder(ModuleBuilder moduleBuilder, string closureTypeName)
-        {
-            ////return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.SequentialLayout | TypeAttributes.Public | TypeAttributes.Sealed, typeof(ValueType));
-            return moduleBuilder.DefineType(closureTypeName, TypeAttributes.BeforeFieldInit | TypeAttributes.Public | TypeAttributes.Sealed);
-        }
-
     }
 }

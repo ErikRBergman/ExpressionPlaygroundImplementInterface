@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground
+﻿namespace Serpent.InterfaceProxy
 {
     using System;
     using System.Collections.Immutable;
@@ -11,10 +11,10 @@
             this.NamesUsed = namesUsed;
         }
 
+        public static ImplementInterfaceMethodResult Empty => new ImplementInterfaceMethodResult(ImmutableList<Type>.Empty, ImmutableList<string>.Empty);
+
         public ImmutableList<Type> InterfacesImplemented { get; }
 
         public ImmutableList<string> NamesUsed { get; }
-
-        public static ImplementInterfaceMethodResult Empty => new ImplementInterfaceMethodResult(ImmutableList<Type>.Empty, ImmutableList<string>.Empty);
     }
 }

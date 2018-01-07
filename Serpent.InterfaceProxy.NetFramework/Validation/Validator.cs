@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Validation
+﻿namespace Serpent.InterfaceProxy.Validation
 {
     using System;
 
@@ -26,26 +26,6 @@
             return this;
         }
 
-        public Validator IsNotNull<T>(T value, string argumentName)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(argumentName);
-            }
-
-            return this;
-        }
-
-        public Validator IsTrue(bool? value, string argumentName)
-        {
-            if (value != true)
-            {
-                throw new ArgumentException("Value must be true", argumentName);
-            }
-
-            return this;
-        }
-
         public Validator IsFalse(bool? value, string argumentName)
         {
             if (value != false)
@@ -66,5 +46,24 @@
             return this;
         }
 
+        public Validator IsNotNull<T>(T value, string argumentName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(argumentName);
+            }
+
+            return this;
+        }
+
+        public Validator IsTrue(bool? value, string argumentName)
+        {
+            if (value != true)
+            {
+                throw new ArgumentException("Value must be true", argumentName);
+            }
+
+            return this;
+        }
     }
 }

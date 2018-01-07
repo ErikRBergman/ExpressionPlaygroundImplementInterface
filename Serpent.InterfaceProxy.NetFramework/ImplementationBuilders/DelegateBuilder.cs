@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Delegates
+﻿namespace Serpent.InterfaceProxy.ImplementationBuilders
 {
     using System;
     using System.Collections.Immutable;
@@ -49,13 +49,12 @@
 
             if (delegateParameters.Length == 1)
             {
-                var builder = delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "closureReference");
+                delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "closureReference");
             }
             else
             {
-                var builder = delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "innerInterfaceReference");
-                builder = delegateMethodBuilder.DefineParameter(2, ParameterAttributes.None, "innerInterfaceReference");
-
+                delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "innerInterfaceReference");
+                delegateMethodBuilder.DefineParameter(2, ParameterAttributes.None, "innerInterfaceReference");
             }
 
             // Get arguments from the closure type
@@ -99,6 +98,5 @@
 
             return delegateMethodBuilder;
         }
-
     }
 }

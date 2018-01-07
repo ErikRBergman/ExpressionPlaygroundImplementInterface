@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground
+﻿namespace ExpressionPlayground.Test
 {
     public class TestMethodCall
     {

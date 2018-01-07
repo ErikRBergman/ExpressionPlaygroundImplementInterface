@@ -44,7 +44,6 @@
 ////            return currentExpression.Compile();
 ////        }
 
-
 ////        public static Delegate CreateInstance(Type typeToInstantiate, Type typeToReturn)
 ////        {
 ////            var constructorInfo = typeToInstantiate.GetConstructors().FirstOrDefault(c => c.GetParameters().Length == 0);
@@ -87,9 +86,7 @@
 
 ////            Expression<Func<MyInnerClass>> nullInstanceExpression = () => (MyInnerClass)null;
 
-
 ////            var secondConstructorFactory = CreateInstance<MyInnerClass, IMyInterface>(typeof(int), typeof(string), typeof(bool));
-
 
 ////        }
 

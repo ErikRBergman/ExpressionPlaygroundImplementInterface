@@ -1,7 +1,5 @@
-﻿
-
-// ReSharper disable StyleCop.SA1400
-namespace ExpressionPlayground.Extensions
+﻿// ReSharper disable StyleCop.SA1400
+namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
     using System.Reflection.Emit;
@@ -37,7 +35,6 @@ namespace ExpressionPlayground.Extensions
 
                     break;
             }
-
 
             return generator;
         }

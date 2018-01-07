@@ -1,7 +1,6 @@
-﻿namespace ExpressionPlayground.Test
+﻿namespace ExpressionPlayground.Test.Implementation
 {
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
 
@@ -123,13 +122,13 @@
 
         public Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters)
         {
-            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
+            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), new object[] { typeof(T1) }.Union(parameters.Select(p => (object)p))));
             return Task.FromResult<T1>(default(T1));
         }
 
         public KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> ComplexGenericStructure<T1, T2, T3>(KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter)
         {
-            this.methodCalls.Add(new TestMethodCall(nameof(this.ComplexGenericStructure), ImmutableList<object>.Empty.Add(typeof(T1)).Add(typeof(T2)).Add(typeof(T3)).Add(parameter)));
+            this.methodCalls.Add(new TestMethodCall(nameof(this.ComplexGenericStructure), typeof(T1), typeof(T2), typeof(T3), parameter));
             return parameter;
         }
 

@@ -1,11 +1,11 @@
-namespace ExpressionPlayground.Types
+namespace Serpent.InterfaceProxy.Types
 {
     using System;
     using System.Collections.Generic;
 
-    using ExpressionPlayground.Extensions;
+    using Serpent.InterfaceProxy.Extensions;
 
-    internal static class TypeSubstitutor
+    public static class TypeSubstitutor
     {
         public static Type GetSubstitutedType(Type mainType, IReadOnlyDictionary<Type, Type> substitutes)
         {

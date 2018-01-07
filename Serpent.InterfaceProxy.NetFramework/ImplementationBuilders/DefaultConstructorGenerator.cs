@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Constructors
+﻿namespace Serpent.InterfaceProxy.ImplementationBuilders
 {
     using System;
     using System.Collections.Generic;

@@ -1,11 +1,11 @@
-﻿namespace ExpressionPlayground.Extensions
+﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
 
-    using ExpressionPlayground.Types;
+    using Serpent.InterfaceProxy.Types;
 
     public static class TypeExtensions
     {

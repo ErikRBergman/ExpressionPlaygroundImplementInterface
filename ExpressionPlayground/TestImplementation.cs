@@ -120,19 +120,9 @@
             this.methodCalls.Add(new TestMethodCall(nameof(this.NoResult_Generic_NoParameters), typeof(T1)));
         }
 
-        public Task<T1> GenericsAndVarArgs<T1>()
-        //public Task<T1> GenericsAndVarArgs<T1>(T1[] parameters)
-        //public Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters)
+        public Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters)
         {
-            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1))));
-            //this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
-            return Task.FromResult<T1>(default(T1));
-        }
-
-        public Task<T1> GenericsAndVarArgs<T1>(T1[] parameters)
-        {
-            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1))));
-            //this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
+            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
             return Task.FromResult<T1>(default(T1));
         }
 

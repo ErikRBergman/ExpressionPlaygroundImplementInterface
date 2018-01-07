@@ -117,7 +117,8 @@
             //var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
 
-            // Todo: Methods with variable arguments
+            // Todo: Complex generic argument structures, for example void Method<T1, T2, T3>(KeyValuePair<KeyValuePair<KeyValuePair<T3, KeyValuePair<T2, KeyValuePair<T1>>
+
             // Todo: Generic interfaces
         }
 

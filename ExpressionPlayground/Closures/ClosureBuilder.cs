@@ -12,10 +12,10 @@ namespace ExpressionPlayground.Closures
 
             var parameters = sourceMethodInfo.GetParameters();
 
-            var genericArgumentArray = sourceMethodInfo.GetGenericArguments();
-            var closureGenericArguments = genericArgumentArray.Length == 0
+            var genericArguments = sourceMethodInfo.GetGenericArguments();
+            var closureGenericArguments = genericArguments.Length == 0
                                               ? Array.Empty<GenericTypeParameterBuilder>()
-                                              : closureTypeBuilder.DefineGenericParameters(genericArgumentArray.Select(ga => ga.Name).ToArray());
+                                              : closureTypeBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
 
             // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)
@@ -30,13 +30,20 @@ namespace ExpressionPlayground.Closures
                 {
                     var elementType = parameterType.GetElementType();
                     var arrayRank = parameterType.GetArrayRank();
-                    elementType = GetSubstitutedType(genericArgumentArray, elementType, closureGenericArguments);
+                    elementType = GetSubstitutedType(genericArguments, elementType, closureGenericArguments);
 
-                    parameterType = elementType.MakeArrayType(arrayRank);
+                    if (arrayRank != 1)
+                    {
+                        parameterType = elementType.MakeArrayType(arrayRank);
+                    }
+                    else
+                    {
+                        parameterType = elementType.MakeArrayType();
+                    }
                 }
                 else
                 {
-                    parameterType = GetSubstitutedType(genericArgumentArray, parameterType, closureGenericArguments);
+                    parameterType = GetSubstitutedType(genericArguments, parameterType, closureGenericArguments);
                 }
 
 

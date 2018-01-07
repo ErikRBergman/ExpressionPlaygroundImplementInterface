@@ -1,6 +1,7 @@
 ﻿namespace ExpressionPlayground
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
 
     public class MockTemplate : ProxyBase<IInterfaceToImplement>, IInterfaceToImplement
@@ -66,6 +67,26 @@
                 parameters = parameters
             },
                 this.GenericsAndVarArgs_delegate);
+        }
+
+        public void ComplexGenericStructure<T1, T2, T3>(KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter)
+        {
+            this.Execute(
+                new ComplexGenericStructure_Closure<T1, T2, T3>
+                    {
+                        parameter = parameter
+                    },
+                this.ComplexGenericStructure_Delegate);
+        }
+
+        public class ComplexGenericStructure_Closure<T1, T2, T3>
+        {
+            public KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter;
+        }
+
+        public void ComplexGenericStructure_Delegate<T1, T2, T3>(ComplexGenericStructure_Closure<T1, T2, T3> parameter, IInterfaceToImplement service)
+        {
+            service.ComplexGenericStructure(parameter.parameter);
         }
 
         public class GenericsAndVarArgs_Closure<T1>

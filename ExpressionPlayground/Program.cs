@@ -1,11 +1,15 @@
 ﻿namespace ExpressionPlayground
 {
+    using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
 
     using ExpressionPlayground.Extensions;
     using ExpressionPlayground.Validation;
+
+    using Serpent.Common.BaseTypeExtensions.Collections;
 
     public class Program
     {
@@ -16,11 +20,13 @@
 
         private static async Task MainAsync(string[] args)
         {
+            var newType = SubstituteTypes<decimal, double, byte, string, float, short>(new KeyValuePair<KeyValuePair<decimal, KeyValuePair<double, byte>>, KeyValuePair<double, KeyValuePair<byte, double>>>());
+
             var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
-                                       {
-                                           ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                                               @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
-                                       };
+            {
+                ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
+                    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
+            };
 
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<IInterfaceToImplement>();
 
@@ -113,14 +119,32 @@
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_NoParameters), mc.MethodName) == 0);
 
             ////void GenericsAndVarArgs<T1>();
-            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs<int>(new []{1});
-            //var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
+            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(1);
+
+            // var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
+
+            proxy.ComplexGenericStructure(
+                new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>());
+            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
 
             // Todo: Complex generic argument structures, for example void Method<T1, T2, T3>(KeyValuePair<KeyValuePair<KeyValuePair<T3, KeyValuePair<T2, KeyValuePair<T1>>
 
             // Todo: Generic interfaces
         }
 
+        private static Type SubstituteTypes<T1, T2, T3, S1, S2, S3>(params KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>>[] parameters)
+        {
+            var substitutes = ImmutableDictionary<Type, Type>.Empty.Add(typeof(T1), typeof(S1)).Add(typeof(T2), typeof(S2)).Add(typeof(T3), typeof(S3));
+            var type = parameters.GetType();
+            return TypeSubstitutor.SubstituteTypes(type, substitutes);
+        }
+
+        public struct GenericStruct<T>
+        {
+            public T First { get; set; }
+
+            public T Second { get; set; }
+        }
     }
 }

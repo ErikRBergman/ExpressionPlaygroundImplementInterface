@@ -126,6 +126,11 @@
             return Task.FromResult<T1>(default(T1));
         }
 
+        public void ComplexGenericStructure<T1, T2, T3>(KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter)
+        {
+            this.methodCalls.Add(new TestMethodCall(nameof(this.ComplexGenericStructure), ImmutableList<object>.Empty.Add(typeof(T1)).Add(typeof(T2)).Add(typeof(T3)).Add(parameter)));
+        }
+
         public Task NoResult_Generic_Parameters_Async<T1, T2, T3>(T1 t1, T2 t2, T3 t3)
         {
             this.methodCalls.Add(new TestMethodCall(nameof(this.NoResult_Generic_Parameters_Async), t1, t2, t3));

@@ -26,7 +26,7 @@ namespace ExpressionPlayground.Closures
 
                 var parameterType = parameter.ParameterType;
 
-                if (parameterType.BaseType == typeof(System.Array))
+                if (parameterType.IsArray)
                 {
                     var elementType = parameterType.GetElementType();
                     var arrayRank = parameterType.GetArrayRank();

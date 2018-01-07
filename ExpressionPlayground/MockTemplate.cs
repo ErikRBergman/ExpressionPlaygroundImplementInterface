@@ -23,9 +23,9 @@
         public Task<TModel> GenericResult_GenericParameter_Async<TModel>(TModel model)
         {
             var localModel = new SetModelClass<TModel>
-                                 {
-                                     Model = model
-                                 };
+            {
+                Model = model
+            };
 
             return this.ExecuteAsync(localModel, this.GenericResultGenericParameterAsyncDelegate);
         }
@@ -39,19 +39,51 @@
         {
             return Task.FromResult(
                 new ThreeGenericParameter<T1, T2, T3>
-                    {
-                        t1 = t1,
+                {
+                    t1 = t1,
 
-                        t2 = t2,
+                    t2 = t2,
 
-                        t3 = t3
-                    });
+                    t3 = t3
+                });
         }
 
         public void NoResult_Generic_NoParameters<T1>()
         {
             throw new NotImplementedException();
         }
+
+        //public Task<T1> GenericsAndVarArgs<T1>()
+        ////public Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters)
+        //{
+        //    return this.ExecuteAsync(s => this.GenericsAndVarArgs_delegate<T1>(s));
+        //}
+
+        public Task<T1> GenericsAndVarArgs<T1>(T1[] parameters)
+        {
+            return this.ExecuteAsync(new GenericsAndVarArgs_Closure<T1>
+            {
+                parameters = parameters
+            },
+                this.GenericsAndVarArgs_delegate);
+        }
+
+        public class GenericsAndVarArgs_Closure<T1>
+        {
+            public T1[] parameters;
+        }
+
+        public Task<T1> GenericsAndVarArgs_delegate<T1>(GenericsAndVarArgs_Closure<T1> parameters, IInterfaceToImplement innerService)
+        {
+            return innerService.GenericsAndVarArgs<T1>(parameters.parameters);
+        }
+
+        //public Task<T1> GenericsAndVarArgs_delegate<T1>(IInterfaceToImplement innerService)
+        ////public Task<T1> GenericsAndVarArgs_delegate<T1>(GenericsAndVarArgs_Closure<T1> modelClass, IInterfaceToImplement innerService)
+        //{
+        //    //return innerService.GenericsAndVarArgs(modelClass.parameters);
+        //    return innerService.GenericsAndVarArgs<T1>();
+        //}
 
         public Task NoResult_Generic_NoParameters_Async<T1>()
         {
@@ -106,9 +138,9 @@
         public Task<int> Result_GenericParameter_Async<TModel>(TModel model)
         {
             var localModel = new SetModelClass<TModel>
-                                 {
-                                     Model = model
-                                 };
+            {
+                Model = model
+            };
 
             return this.ExecuteAsync(localModel, this.b_delegate);
         }
@@ -127,20 +159,20 @@
         {
             return this.Execute(
                 new GetModelClass
-                    {
-                        intParameter = intParameter,
-                        stringParameter = stringParameter
-                    },
+                {
+                    intParameter = intParameter,
+                    stringParameter = stringParameter
+                },
                 this.Result_Parameters_delegate);
         }
 
         public Task<Model> Result_Parameters_Async(int intParameter, string stringParameter)
         {
             var getModel = new GetModelClass
-                               {
-                                   intParameter = intParameter,
-                                   stringParameter = stringParameter
-                               };
+            {
+                intParameter = intParameter,
+                stringParameter = stringParameter
+            };
 
             return this.ExecuteAsync(getModel, this.a_delegate);
         }

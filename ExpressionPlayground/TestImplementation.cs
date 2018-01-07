@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
     using System.Threading.Tasks;
 
     public class TestImplementation : IInterfaceToImplement
@@ -116,6 +118,22 @@
         public void NoResult_Generic_NoParameters<T1>()
         {
             this.methodCalls.Add(new TestMethodCall(nameof(this.NoResult_Generic_NoParameters), typeof(T1)));
+        }
+
+        public Task<T1> GenericsAndVarArgs<T1>()
+        //public Task<T1> GenericsAndVarArgs<T1>(T1[] parameters)
+        //public Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters)
+        {
+            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1))));
+            //this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
+            return Task.FromResult<T1>(default(T1));
+        }
+
+        public Task<T1> GenericsAndVarArgs<T1>(T1[] parameters)
+        {
+            this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1))));
+            //this.methodCalls.Add(new TestMethodCall(nameof(this.GenericsAndVarArgs), ImmutableList<object>.Empty.Add(typeof(T1)).AddRange(parameters.Select(p => (object)p))));
+            return Task.FromResult<T1>(default(T1));
         }
 
         public Task NoResult_Generic_Parameters_Async<T1, T2, T3>(T1 t1, T2 t2, T3 t3)

@@ -56,7 +56,8 @@ namespace ExpressionPlayground
 
             // Default delegates for names
             this.ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                @namespace + "." + @interface.Name + "." + methodInfo.Name + "_" + "_" + Guid.NewGuid().ToString("N");
+                @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
+
             this.ProxyTypeNameSelectorFunc = (@interface, @namespace) => @namespace + "." + @interface.Name + "+proxy";
         }
 
@@ -108,6 +109,10 @@ namespace ExpressionPlayground
             Type finalClosureType,
             MethodInfo finalDelegateMethod)
         {
+            if (method.Name == "GenericsAndVarArgs")
+            {
+            }
+
             var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                 method.Name,
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Final,
@@ -122,6 +127,15 @@ namespace ExpressionPlayground
             for (int i = 0; i < parameters.Length; i++)
             {
                 var builder = interfaceImplementationMethodBuilder.DefineParameter(i + 1, parameters[i].Attributes, parameters[i].Name);
+
+                var paramArrayAttribute = parameters[i].GetCustomAttribute<ParamArrayAttribute>();
+
+                if (paramArrayAttribute != null)
+                {
+                    var attributeBuilder = new CustomAttributeBuilder(typeof(ParamArrayAttribute).GetConstructors().First(c => c.IsPublic && c.GetParameters().Length == 0), new object[0]);
+                    builder.SetCustomAttribute(attributeBuilder);
+                }
+
                 if (parameters[i].Attributes.HasFlag(ParameterAttributes.HasDefault))
                 {
                     builder.SetConstant(parameters[i].DefaultValue);
@@ -145,7 +159,6 @@ namespace ExpressionPlayground
 
             var hasParameters = parameters.Length != 0;
 
-
             var isAsyncMethod = typeof(Task).IsAssignableFrom(sourceMethodInfo.ReturnType);
 
             var returnValueGenericArguments = sourceMethodInfo.ReturnType.GenericTypeArguments;
@@ -163,11 +176,12 @@ namespace ExpressionPlayground
                 returnType = sourceMethodInfo.ReturnType.GenericTypeArguments[0];
             }
 
+            // Start of call to the proxy method (being called in the end of this method). Moved ldarg_0 here to optimize
+            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
 
             // only emit instantiating the closure if it's needed
             if (hasParameters)
             {
-                var closureVariable = generator.DeclareLocal(closureFinalType);
                 var closureConstructor = closureFinalType.GetConstructors().Single();
 
                 generator.Emit(OpCodes.Newobj, closureConstructor);
@@ -175,25 +189,15 @@ namespace ExpressionPlayground
                 // Populate the closure
                 var closureFields = closureFinalType.GetFields();
 
-                for (var i = 0; i < parameters.Length; i++)
+                var parameterCount = parameters.Length;
+                for (int i = 0; i < parameterCount; i++)
                 {
                     generator.Emit(OpCodes.Dup);
-                    generator.Emit(OpCodes.Ldarg, i + 1); // argument i+1 (0 is this.)
+
+                    generator.LdArg(i + 1);
+
                     generator.Emit(OpCodes.Stfld, closureFields[i]);
                 }
-
-                // Store the closure in our local variable
-                generator.Emit(OpCodes.Stloc, closureVariable);
-            }
-
-            // Start of call to this.ExecuteAsync
-            generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
-
-            // With no parameters, the closure does not need to be pushed either
-            if (hasParameters)
-            {
-                // First parameter to the Func<*> constructor
-                generator.Emit(OpCodes.Ldloc_0);
             }
 
             // Second parameter to the Func<*> constructor
@@ -207,6 +211,21 @@ namespace ExpressionPlayground
             var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
             generator.Emit(OpCodes.Newobj, delegateConstructor);
 
+            var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod);
+
+            generator.EmitCall(OpCodes.Call, proxyMethod, null); // call the proxy method
+            generator.Emit(OpCodes.Ret);
+        }
+
+        private static MethodInfo GetProxyMethod(
+            Type closureFinalType,
+            Type parentType,
+            bool hasParameters,
+            bool hasReturnValue,
+            Type returnType,
+            bool hasGenericReturnValueArguments,
+            bool isAsyncMethod)
+        {
             var proxyMethods = GetExecuteAsyncMethods(parentType);
 
             MethodInfo executeAsync = null;
@@ -247,9 +266,7 @@ namespace ExpressionPlayground
             {
                 executeAsync = executeAsync.MakeGenericMethod(proxyMethodGenericParameters.ToArray());
             }
-
-            generator.EmitCall(OpCodes.Call, executeAsync, null); // call the inner method
-            generator.Emit(OpCodes.Ret);
+            return executeAsync;
         }
 
         private static Type GetDelegateType(Type interfaceType, MethodInfo sourceMethodInfo, Type closureFinalType, bool hasParameters, bool returnsVoid)
@@ -353,6 +370,11 @@ namespace ExpressionPlayground
                 usedNames = usedNames.Add(nameWithParams);
 
                 var genericArgumentNames = genericArguments.Select(pi => pi.Name).ToArray();
+
+                if (method.Name == "GenericsAndVarArgs")
+                {
+
+                }
 
                 var finalClosureType = GetFinalClosureType(@interface, createClosureTypeFunc, parameters, method, genericArguments);
                 var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, method, finalClosureType, genericArguments);

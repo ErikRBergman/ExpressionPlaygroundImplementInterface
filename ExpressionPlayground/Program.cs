@@ -16,7 +16,12 @@
 
         private static async Task MainAsync(string[] args)
         {
-            var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>));
+            var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
+                                       {
+                                           ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
+                                               @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
+                                       };
+
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<IInterfaceToImplement>();
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
@@ -107,10 +112,13 @@
             proxy.NoResult_Generic_NoParameters<float>();
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_NoParameters), mc.MethodName) == 0);
 
+            ////void GenericsAndVarArgs<T1>();
+            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs<int>(new []{1});
+            //var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
+            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
 
-            // Todo: Methods returning void or non Task argument, including generic arguments
             // Todo: Methods with variable arguments
-            // Todo: Generic interface
+            // Todo: Generic interfaces
         }
 
     }

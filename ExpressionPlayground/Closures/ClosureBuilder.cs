@@ -9,6 +9,7 @@ namespace ExpressionPlayground.Closures
     {
         public static Type CreateClosureType(TypeBuilder closureTypeBuilder, MethodInfo sourceMethodInfo)
         {
+
             var parameters = sourceMethodInfo.GetParameters();
 
             var genericArgumentArray = sourceMethodInfo.GetGenericArguments();
@@ -19,13 +20,25 @@ namespace ExpressionPlayground.Closures
             // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)
             {
+                if (sourceMethodInfo.Name == "GenericsAndVarArgs")
+                {
+                }
+
                 var parameterType = parameter.ParameterType;
 
-                var index = Array.IndexOf(genericArgumentArray, parameterType);
-                if (index != -1)
+                if (parameterType.BaseType == typeof(System.Array))
                 {
-                    parameterType = closureGenericArguments[index];
+                    var elementType = parameterType.GetElementType();
+                    var arrayRank = parameterType.GetArrayRank();
+                    elementType = GetSubstitutedType(genericArgumentArray, elementType, closureGenericArguments);
+
+                    parameterType = elementType.MakeArrayType(arrayRank);
                 }
+                else
+                {
+                    parameterType = GetSubstitutedType(genericArgumentArray, parameterType, closureGenericArguments);
+                }
+
 
                 closureTypeBuilder.DefineField(parameter.Name, parameterType, FieldAttributes.Public);
             }
@@ -34,6 +47,16 @@ namespace ExpressionPlayground.Closures
             var closureType = closureTypeBuilder.CreateType();
 
             return closureType;
+        }
+
+        private static Type GetSubstitutedType(Type[] genericArgumentArray, Type parameterType, GenericTypeParameterBuilder[] closureGenericArguments)
+        {
+            var index = Array.IndexOf(genericArgumentArray, parameterType);
+            if (index != -1)
+            {
+                parameterType = closureGenericArguments[index];
+            }
+            return parameterType;
         }
 
         public static TypeBuilder CreateClosureTypeBuilder(ModuleBuilder moduleBuilder, string closureTypeName)

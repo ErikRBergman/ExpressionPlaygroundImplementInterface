@@ -46,8 +46,10 @@
 
         void NoResult_Generic_NoParameters<T1>();
 
+        Task<T1> GenericsAndVarArgs<T1>(T1[] parameters);
 
-        //Task GenericsAndVarArgs<T1>(params T1[] parameters);
+        //Task<T1> GenericsAndVarArgs<T1>(T1[] parameters);
+        //Task<T1> GenericsAndVarArgs<T1>();
     }
 
     public struct ThreeGenericParameter<T1, T2, T3>

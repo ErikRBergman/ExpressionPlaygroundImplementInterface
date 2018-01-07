@@ -53,7 +53,7 @@
             }
             else
             {
-                delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "innerInterfaceReference");
+                delegateMethodBuilder.DefineParameter(1, ParameterAttributes.None, "closureReference");
                 delegateMethodBuilder.DefineParameter(2, ParameterAttributes.None, "innerInterfaceReference");
             }
 

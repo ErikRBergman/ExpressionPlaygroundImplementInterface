@@ -13,6 +13,7 @@ namespace Serpent.InterfaceProxy
 
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.ImplementationBuilders;
+    using Serpent.InterfaceProxy.Types;
     using Serpent.InterfaceProxy.Validation;
 
     public class ProxyTypeBuilder
@@ -120,7 +121,14 @@ namespace Serpent.InterfaceProxy
 
             if (genericArguments.Any())
             {
-                interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
+                var genericParameters = interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
+                var substituteTypes = genericArguments.ZipToDictionary(genericParameters);
+
+                var returnType = method.ReturnType;
+
+                var newReturnType = TypeSubstitutor.GetSubstitutedType(returnType, substituteTypes);
+
+                interfaceImplementationMethodBuilder.SetReturnType(newReturnType);
             }
 
             for (var i = 0; i < parameters.Length; i++)

@@ -6,6 +6,7 @@ namespace Serpent.InterfaceProxy.ImplementationBuilders
     using System.Reflection;
     using System.Reflection.Emit;
 
+    using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.Types;
 
     internal static class ClosureBuilder
@@ -19,7 +20,8 @@ namespace Serpent.InterfaceProxy.ImplementationBuilders
                                               ? Array.Empty<GenericTypeParameterBuilder>()
                                               : closureTypeBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
 
-            var substituteTypes = genericArguments.Zip(closureGenericArguments, (a, b) => new KeyValuePair<Type, Type>(a, b)).ToDictionary(p => p.Key, p => p.Value);
+            ////var substituteTypes = genericArguments.Zip(closureGenericArguments, (a, b) => new KeyValuePair<Type, Type>(a, b)).ToDictionary(p => p.Key, p => p.Value);
+            var substituteTypes = genericArguments.ZipToDictionary(closureGenericArguments);
 
             // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)

@@ -1,6 +1,7 @@
 ﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System.Collections.Generic;
+    using System.Linq;
 
     public static class DictionaryExtensions
     {
@@ -18,6 +19,12 @@
         {
             dictionary.Add(key, value);
             return dictionary;
+        }
+
+        public static Dictionary<TItem, TItem> ZipToDictionary<TItem>(this IEnumerable<TItem> items, IEnumerable<TItem> moreItems)
+        {
+            var returnItems = items.Zip(moreItems, (a, b) => new KeyValuePair<TItem, TItem>(a, b));
+            return returnItems.ToDictionary(p => p.Key, p => p.Value);
         }
     }
 }

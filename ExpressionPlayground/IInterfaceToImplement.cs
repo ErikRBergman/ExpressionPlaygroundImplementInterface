@@ -49,7 +49,7 @@
 
         Task<T1> GenericsAndVarArgs<T1>(params T1[] parameters);
 
-        //void ComplexGenericStructure<T1, T2, T3>(KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter);
+        KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> ComplexGenericStructure<T1, T2, T3>(KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter);
     }
 
     public struct ThreeGenericParameter<T1, T2, T3>

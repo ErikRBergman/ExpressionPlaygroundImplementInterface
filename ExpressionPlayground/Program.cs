@@ -124,11 +124,20 @@
             // var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
 
-            //proxy.ComplexGenericStructure(
-            //    new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>());
-            //methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
+            var complexGenericStructureObject =
+                new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>(
+                    new KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>(
+                        55, 
+                        new KeyValuePair<string, GenericStruct<int>>("fivefive", new GenericStruct<int>(1, 2))),
+                    new KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>("two", new KeyValuePair<GenericStruct<int>, string>(new GenericStruct<int>(5, 6), "fivesix")));
 
-            // Todo: Complex generic argument structures, for example void Method<T1, T2, T3>(KeyValuePair<KeyValuePair<KeyValuePair<T3, KeyValuePair<T2, KeyValuePair<T1>>
+            var complexGenericStructure = proxy.ComplexGenericStructure(complexGenericStructureObject);
+            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
+
+            if (complexGenericStructure.Key.Key != 55)
+            {
+                throw new Exception("Bummer!");
+            }
 
             // Todo: Generic interfaces
         }
@@ -142,6 +151,12 @@
 
         public struct GenericStruct<T>
         {
+            public GenericStruct(T first, T second)
+            {
+                this.First = first;
+                this.Second = second;
+            }
+
             public T First { get; set; }
 
             public T Second { get; set; }

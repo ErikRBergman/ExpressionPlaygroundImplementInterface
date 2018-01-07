@@ -86,7 +86,7 @@
 
         public void ComplexGenericStructure_Delegate<T1, T2, T3>(ComplexGenericStructure_Closure<T1, T2, T3> parameter, IInterfaceToImplement service)
         {
-            service.ComplexGenericStructure(parameter.parameter);
+            //service.ComplexGenericStructure(parameter.parameter);
         }
 
         public class GenericsAndVarArgs_Closure<T1>

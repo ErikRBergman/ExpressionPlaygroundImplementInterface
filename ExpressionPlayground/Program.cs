@@ -119,14 +119,14 @@
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.NoResult_Generic_NoParameters), mc.MethodName) == 0);
 
             ////void GenericsAndVarArgs<T1>();
-            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(1);
+            var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(1, 2 ,3 ,4);
 
             // var genericsAndVarArgsResult = proxy.GenericsAndVarArgs(new[] { 1, 2, 3, 4 });
             methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.GenericsAndVarArgs), mc.MethodName) == 0);
 
-            proxy.ComplexGenericStructure(
-                new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>());
-            methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
+            //proxy.ComplexGenericStructure(
+            //    new KeyValuePair<KeyValuePair<int, KeyValuePair<string, GenericStruct<int>>>, KeyValuePair<string, KeyValuePair<GenericStruct<int>, string>>>());
+            //methodCall = testImplementation.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(proxy.ComplexGenericStructure), mc.MethodName) == 0);
 
             // Todo: Complex generic argument structures, for example void Method<T1, T2, T3>(KeyValuePair<KeyValuePair<KeyValuePair<T3, KeyValuePair<T2, KeyValuePair<T1>>
 
@@ -137,7 +137,7 @@
         {
             var substitutes = ImmutableDictionary<Type, Type>.Empty.Add(typeof(T1), typeof(S1)).Add(typeof(T2), typeof(S2)).Add(typeof(T3), typeof(S3));
             var type = parameters.GetType();
-            return TypeSubstitutor.SubstituteTypes(type, substitutes);
+            return TypeSubstitutor.GetSubstitutedType(type, substitutes);
         }
 
         public struct GenericStruct<T>

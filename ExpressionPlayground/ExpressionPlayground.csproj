@@ -58,6 +58,7 @@
     <Compile Include="CreateMethodProxyFactory.cs" />
     <Compile Include="DefaultValues.cs" />
     <Compile Include="Delegates\DelegateBuilder.cs" />
+    <Compile Include="Extensions\DictionaryExtensions.cs" />
     <Compile Include="Extensions\ILGeneratorExtensions.cs" />
     <Compile Include="Extensions\MethodInfoExtensions.cs" />
     <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />

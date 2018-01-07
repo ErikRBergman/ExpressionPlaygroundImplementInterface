@@ -1,57 +1,62 @@
-using System;
-using System.Collections.Generic;
-
-using Serpent.Common.BaseTypeExtensions.Collections;
-
-static internal class TypeSubstitutor
+namespace ExpressionPlayground
 {
-    public static Type SubstituteTypes(Type mainType, IDictionary<Type, Type> substitutes)
+    using System;
+    using System.Collections.Generic;
+
+    using ExpressionPlayground.Extensions;
+
+    internal static class TypeSubstitutor
     {
-        var itemType = mainType;
-
-        int arrayRank = 0;
-
-        if (mainType.IsArray)
+        public static Type GetSubstitutedType(Type mainType, IReadOnlyDictionary<Type, Type> substitutes)
         {
-            itemType = mainType.GetElementType();
-            arrayRank = mainType.GetArrayRank();
-        }
+            var itemType = mainType;
 
-        itemType = substitutes.GetValueOrDefault(itemType, itemType);
+            var arrayRank = 0;
 
-        Type newType = itemType;
-
-        var genericArguments = itemType.GetGenericArguments();
-
-        if (genericArguments.Length != 0)
-        {
-            var newGenericArguments = new List<Type>(genericArguments.Length);
-
-            foreach (var genericArgument in genericArguments)
+            // This method can be optimized by extracting the the parts that does not check and produce array and using it inside the recursion
+            if (mainType.IsArray)
             {
-                var newGenericArgument = substitutes.GetValueOrDefault(genericArgument, genericArgument);
+                itemType = mainType.GetElementType();
+                arrayRank = mainType.GetArrayRank();
+            }
 
-                if (newGenericArgument == genericArgument)
+            itemType = substitutes.GetValueOrDefault(itemType, itemType);
+
+            var newType = itemType;
+
+            var genericArguments = itemType.GenericTypeArguments;
+
+            if (genericArguments.Length != 0)
+            {
+                var newGenericArguments = new List<Type>(genericArguments.Length);
+
+                foreach (var genericArgument in genericArguments)
                 {
-                    newGenericArgument = SubstituteTypes(newGenericArgument, substitutes);
+                    var newGenericArgument = substitutes.GetValueOrDefault(genericArgument, genericArgument);
+
+                    // Make recursion if the type was not substituted
+                    if (newGenericArgument == genericArgument)
+                    {
+                        newGenericArgument = GetSubstitutedType(newGenericArgument, substitutes);
+                    }
+
+                    newGenericArguments.Add(newGenericArgument);
                 }
 
-                newGenericArguments.Add(newGenericArgument);
+                newType = itemType.GetGenericTypeDefinition().MakeGenericType(newGenericArguments.ToArray());
             }
 
-            newType = itemType.GetGenericTypeDefinition().MakeGenericType(newGenericArguments.ToArray());
-        }
-
-        if (mainType.IsArray)
-        {
-            if (arrayRank != 1)
+            if (mainType.IsArray)
             {
-                return newType.MakeArrayType(arrayRank);
+                if (arrayRank != 1)
+                {
+                    return newType.MakeArrayType(arrayRank);
+                }
+
+                return newType.MakeArrayType();
             }
 
-            return newType.MakeArrayType();
+            return newType;
         }
-
-        return newType;
     }
 }

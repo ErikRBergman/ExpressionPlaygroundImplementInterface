@@ -1,11 +1,17 @@
 ﻿namespace ExpressionPlayground.Extensions
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
 
     public static class TypeExtensions
     {
+        public static Type GetGenericSubstitute(this Type type, IReadOnlyDictionary<Type, Type> substitutes)
+        {
+            return TypeSubstitutor.GetSubstitutedType(type, substitutes);
+        }
+
         public static ImmutableHashSet<Type> GetAllInterfaces(this Type interfaceType)
         {
             var interfaces = ImmutableHashSet<Type>.Empty;

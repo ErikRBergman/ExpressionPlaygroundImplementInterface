@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpressionPlayground", "ExpressionPlayground\ExpressionPlayground.csproj", "{81481A20-8964-496E-B971-756486C5E34E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.InterfaceProxy", "Serpent.InterfaceProxy\Serpent.InterfaceProxy.csproj", "{C408AA14-53F4-4E2C-9ADC-51A708B08578}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{81481A20-8964-496E-B971-756486C5E34E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81481A20-8964-496E-B971-756486C5E34E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81481A20-8964-496E-B971-756486C5E34E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C408AA14-53F4-4E2C-9ADC-51A708B08578}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C408AA14-53F4-4E2C-9ADC-51A708B08578}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C408AA14-53F4-4E2C-9ADC-51A708B08578}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C408AA14-53F4-4E2C-9ADC-51A708B08578}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

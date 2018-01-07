@@ -7,6 +7,9 @@
     using System.Threading.Tasks;
 
     using ExpressionPlayground.Extensions;
+    using ExpressionPlayground.Test;
+    using ExpressionPlayground.Test.Interfaces;
+    using ExpressionPlayground.Types;
     using ExpressionPlayground.Validation;
 
     using Serpent.Common.BaseTypeExtensions.Collections;
@@ -28,11 +31,11 @@
                     @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
             };
 
-            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<IInterfaceToImplement>();
+            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>();
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 
-            var testImplementation = new TestImplementation();
+            var testImplementation = new TestInterfaceImplementation();
 
             var proxy = proxyTypeInformation.Factory(testImplementation);
 
@@ -140,6 +143,16 @@
             }
 
             // Todo: Generic interfaces
+            // Todo: Change the closure classes into structs to prevent the extra heap allocation
+            // Todo: Add support for properties
+
+            // Usage for the proxy:
+            // * Service fabric auto repartitioning (where the idea came up)
+            // * Creating decorators like the Serpent.Chain decorators - (cache, retry, aggregate, logging, performance measuring, semaphores, concurrency)
+            // 
+            // Usage for implementing an interface dynamically
+            // * Interface to Web API in ASP.NET Core
+            //   The service developer creates an interface and a service. The middleware implements the interface as a service, or perhaps a type inheriting from Controller and have MVC handle routing (and other services like Open API will work out of the box)
         }
 
         private static Type SubstituteTypes<T1, T2, T3, S1, S2, S3>(params KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>>[] parameters)

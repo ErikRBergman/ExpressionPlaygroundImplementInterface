@@ -1,4 +1,4 @@
-namespace ExpressionPlayground
+namespace ExpressionPlayground.Types
 {
     using System;
     using System.Collections.Generic;

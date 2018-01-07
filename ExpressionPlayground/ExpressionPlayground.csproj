@@ -54,8 +54,7 @@
   <ItemGroup>
     <Compile Include="Closures\ClosureBuilder.cs" />
     <Compile Include="Constructors\DefaultConstructorGenerator.cs" />
-    <Compile Include="CreateInstanceFactory.cs" />
-    <Compile Include="CreateMethodProxyFactory.cs" />
+    <Compile Include="Factories\CreateInstanceFactory.cs" />
     <Compile Include="DefaultValues.cs" />
     <Compile Include="Delegates\DelegateBuilder.cs" />
     <Compile Include="Extensions\DictionaryExtensions.cs" />
@@ -64,21 +63,20 @@
     <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
     <Compile Include="GenerateProxyResult.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
+    <Compile Include="Test\Interfaces\IGenericInterface.cs" />
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
     <Compile Include="ExpressionHelper.cs" />
-    <Compile Include="IInterfaceToImplement.cs" />
+    <Compile Include="Test\Interfaces\ITestInterface.cs" />
     <Compile Include="ProxyTypeBuilder.cs" />
-    <Compile Include="MockMethodDispatcher.cs" />
     <Compile Include="MockTemplate.cs" />
-    <Compile Include="Model.cs" />
-    <Compile Include="TestImplementation.cs" />
+    <Compile Include="Test\Model.cs" />
+    <Compile Include="Test\Implementation\TestInterfaceImplementation.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ProxyBase.cs" />
-    <Compile Include="TestMethodCall.cs" />
-    <Compile Include="TypeHelper.cs" />
-    <Compile Include="TypeSubstitutor.cs" />
+    <Compile Include="Test\ProxyBase.cs" />
+    <Compile Include="Test\TestMethodCall.cs" />
+    <Compile Include="Types\TypeSubstitutor.cs" />
     <Compile Include="Validation\Validator.cs" />
   </ItemGroup>
   <ItemGroup>

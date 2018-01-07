@@ -4,9 +4,11 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    public class MockTemplate : ProxyBase<IInterfaceToImplement>, IInterfaceToImplement
+    using ExpressionPlayground.Test.Interfaces;
+
+    public class MockTemplate : ProxyBase<ITestInterface>, ITestInterface
     {
-        public MockTemplate(IInterfaceToImplement inner)
+        public MockTemplate(ITestInterface inner)
             : base(inner)
         {
         }
@@ -16,7 +18,7 @@
             return this.Execute(model, this.GenericResult_GenericParameter_Delegate);
         }
 
-        private TModel GenericResult_GenericParameter_Delegate<TModel>(TModel m, IInterfaceToImplement service)
+        private TModel GenericResult_GenericParameter_Delegate<TModel>(TModel m, ITestInterface service)
         {
             return m;
         }
@@ -84,7 +86,7 @@
             public KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> parameter;
         }
 
-        public KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> ComplexGenericStructure_Delegate<T1, T2, T3>(ComplexGenericStructure_Closure<T1, T2, T3> parameter, IInterfaceToImplement service)
+        public KeyValuePair<KeyValuePair<T1, KeyValuePair<T2, T3>>, KeyValuePair<T2, KeyValuePair<T3, T2>>> ComplexGenericStructure_Delegate<T1, T2, T3>(ComplexGenericStructure_Closure<T1, T2, T3> parameter, ITestInterface service)
         {
             return service.ComplexGenericStructure(parameter.parameter);
         }
@@ -94,7 +96,7 @@
             public T1[] parameters;
         }
 
-        public Task<T1> GenericsAndVarArgs_delegate<T1>(GenericsAndVarArgs_Closure<T1> parameters, IInterfaceToImplement innerService)
+        public Task<T1> GenericsAndVarArgs_delegate<T1>(GenericsAndVarArgs_Closure<T1> parameters, ITestInterface innerService)
         {
             return innerService.GenericsAndVarArgs<T1>(parameters.parameters);
         }
@@ -198,27 +200,27 @@
             return this.ExecuteAsync(getModel, this.a_delegate);
         }
 
-        public Model Result_Parameters_delegate(GetModelClass modelClass, IInterfaceToImplement innerService)
+        public Model Result_Parameters_delegate(GetModelClass modelClass, ITestInterface innerService)
         {
             return innerService.Result_Parameters(modelClass.intParameter, modelClass.stringParameter);
         }
 
-        private Task<Model> a_delegate(GetModelClass parameter, IInterfaceToImplement innerService)
+        private Task<Model> a_delegate(GetModelClass parameter, ITestInterface innerService)
         {
             return innerService.Result_Parameters_Async(parameter.intParameter, parameter.stringParameter);
         }
 
-        private Task<int> b_delegate<TModel>(SetModelClass<TModel> parameter, IInterfaceToImplement service)
+        private Task<int> b_delegate<TModel>(SetModelClass<TModel> parameter, ITestInterface service)
         {
             return service.Result_GenericParameter_Async(parameter.Model);
         }
 
-        private Task<TModel> GenericResultGenericParameterAsyncDelegate<TModel>(SetModelClass<TModel> parameter, IInterfaceToImplement service)
+        private Task<TModel> GenericResultGenericParameterAsyncDelegate<TModel>(SetModelClass<TModel> parameter, ITestInterface service)
         {
             return service.GenericResult_GenericParameter_Async(parameter.Model);
         }
 
-        private Task NoResult_NoParameters_Delegate(IInterfaceToImplement innerService)
+        private Task NoResult_NoParameters_Delegate(ITestInterface innerService)
         {
             return innerService.NoResult_NoParameters_Async();
         }

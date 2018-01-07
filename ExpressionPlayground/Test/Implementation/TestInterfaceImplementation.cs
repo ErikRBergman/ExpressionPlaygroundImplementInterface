@@ -1,12 +1,13 @@
-﻿namespace ExpressionPlayground
+﻿namespace ExpressionPlayground.Test
 {
-    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
 
-    public class TestImplementation : IInterfaceToImplement
+    using ExpressionPlayground.Test.Interfaces;
+
+    public class TestInterfaceImplementation : ITestInterface
     {
         private readonly List<TestMethodCall> methodCalls = new List<TestMethodCall>();
 

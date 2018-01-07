@@ -2,9 +2,12 @@ namespace ExpressionPlayground.Closures
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
+
+    using ExpressionPlayground.Types;
 
     internal static class ClosureBuilder
     {
@@ -18,13 +21,19 @@ namespace ExpressionPlayground.Closures
                                               ? Array.Empty<GenericTypeParameterBuilder>()
                                               : closureTypeBuilder.DefineGenericParameters(genericArguments.Select(ga => ga.Name).ToArray());
 
+           var substituteTypes = genericArguments.Zip(closureGenericArguments, (a, b) => new KeyValuePair<Type, Type>(a, b)).ToDictionary(p => p.Key, p => p.Value);
 
-            var substituteTypes = new Dictionary<Type, Type>();
+            //var substituteTypes = new Dictionary<Type, Type>();
 
-            for (var i = 0; i < closureGenericArguments.Length; i++)
-            {
-                substituteTypes.Add(genericArguments[i], closureGenericArguments[i]);
-            }
+            //for (var i = 0; i < closureGenericArguments.Length; i++)
+            //{
+            //    substituteTypes.Add(genericArguments[i], closureGenericArguments[i]);
+            //}
+
+            //if (subTypes.Count > 2)
+            //{
+                
+            //}
 
             // Create all parameters from the source method into the closure type
             foreach (var parameter in parameters)
@@ -32,28 +41,6 @@ namespace ExpressionPlayground.Closures
                 var parameterType = parameter.ParameterType;
 
                 parameterType = TypeSubstitutor.GetSubstitutedType(parameterType, substituteTypes);
-
-                //if (parameterType.IsArray)
-                //{
-                //    var elementType = parameterType.GetElementType();
-                //    var arrayRank = parameterType.GetArrayRank();
-                //    elementType = GetSubstitutedType(genericArguments, elementType, closureGenericArguments);
-
-                //    if (arrayRank != 1)
-                //    {
-                //        parameterType = elementType.MakeArrayType(arrayRank);
-                //    }
-                //    else
-                //    {
-                //        parameterType = elementType.MakeArrayType();
-                //    }
-                //}
-                //else
-                //{
-                //    parameterType = GetSubstitutedType(genericArguments, parameterType, closureGenericArguments);
-                //}
-
-
                 closureTypeBuilder.DefineField(parameter.Name, parameterType, FieldAttributes.Public);
             }
 

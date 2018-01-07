@@ -1,9 +1,9 @@
-﻿namespace ExpressionPlayground
+﻿namespace ExpressionPlayground.Test.Interfaces
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    public interface IInterfaceToImplement
+    public interface ITestInterface
     {
         Task<Model> Result_Parameters_Async(int intParameter, string stringParameter);
 

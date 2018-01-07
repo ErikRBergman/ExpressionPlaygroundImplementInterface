@@ -5,6 +5,8 @@
     using System.Collections.Immutable;
     using System.Linq;
 
+    using ExpressionPlayground.Types;
+
     public static class TypeExtensions
     {
         public static Type GetGenericSubstitute(this Type type, IReadOnlyDictionary<Type, Type> substitutes)

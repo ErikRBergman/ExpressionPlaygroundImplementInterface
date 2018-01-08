@@ -122,7 +122,7 @@ namespace Serpent.InterfaceProxy
             if (genericArguments.Any())
             {
                 var genericParameters = interfaceImplementationMethodBuilder.DefineGenericParameters(genericArgumentNames);
-                var substituteTypes = genericArguments.ZipToDictionary(genericParameters);
+                var substituteTypes = genericArguments.ZipToDictionaryMap(genericParameters);
 
                 var returnType = method.ReturnType;
 

@@ -1,6 +1,6 @@
 ﻿// ReSharper disable StyleCop.SA1300
 
-namespace ExpressionPlayground.Test.Interfaces
+namespace Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;

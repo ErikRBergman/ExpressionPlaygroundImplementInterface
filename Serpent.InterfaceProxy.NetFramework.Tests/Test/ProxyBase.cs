@@ -1,7 +1,7 @@
 ﻿// ReSharper disable UnusedMember.Global
 // ReSharper disable StyleCop.SA1409
 // ReSharper disable RedundantEmptyFinallyBlock
-namespace ExpressionPlayground.Test
+namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
 {
     using System;
     using System.Threading.Tasks;

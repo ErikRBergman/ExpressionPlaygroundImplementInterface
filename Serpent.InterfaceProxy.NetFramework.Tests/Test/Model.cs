@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Test
+﻿namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
 {
     public class Model
     {

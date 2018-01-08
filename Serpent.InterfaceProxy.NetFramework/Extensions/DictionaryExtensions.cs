@@ -21,7 +21,7 @@
             return dictionary;
         }
 
-        public static Dictionary<TItem, TItem> ZipToDictionary<TItem>(this IEnumerable<TItem> items, IEnumerable<TItem> moreItems)
+        public static Dictionary<TItem, TItem> ZipToDictionaryMap<TItem>(this IEnumerable<TItem> items, IEnumerable<TItem> moreItems)
         {
             var returnItems = items.Zip(moreItems, (a, b) => new KeyValuePair<TItem, TItem>(a, b));
             return returnItems.ToDictionary(p => p.Key, p => p.Value);

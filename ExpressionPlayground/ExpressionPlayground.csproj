@@ -39,15 +39,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Factories\CreateInstanceFactory.cs" />
-    <Compile Include="Test\Interfaces\IGenericInterface.cs" />
-    <Compile Include="Test\Interfaces\ITestInterface.cs" />
     <Compile Include="MockTemplate.cs" />
-    <Compile Include="Test\Model.cs" />
-    <Compile Include="Test\Implementation\TestInterfaceImplementation.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Test\ProxyBase.cs" />
-    <Compile Include="Test\TestMethodCall.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -59,6 +53,10 @@
     <Folder Include="Methods\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Serpent.InterfaceProxy.NetFramework.Tests\Serpent.InterfaceProxy.NetFramework.Tests.csproj">
+      <Project>{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}</Project>
+      <Name>Serpent.InterfaceProxy.NetFramework.Tests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Serpent.InterfaceProxy.NetFramework\Serpent.InterfaceProxy.NetFramework.csproj">
       <Project>{3a95de7d-3b01-4ea9-b1bd-cd3ef76c49ab}</Project>
       <Name>Serpent.InterfaceProxy.NetFramework</Name>

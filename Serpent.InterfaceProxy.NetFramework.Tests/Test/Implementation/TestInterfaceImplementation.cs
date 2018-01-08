@@ -1,10 +1,10 @@
-﻿namespace ExpressionPlayground.Test.Implementation
+﻿namespace Serpent.InterfaceProxy.NetFramework.Tests.Test.Implementation
 {
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
 
-    using ExpressionPlayground.Test.Interfaces;
+    using Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces;
 
     public class TestInterfaceImplementation : ITestInterface
     {

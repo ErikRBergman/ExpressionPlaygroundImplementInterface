@@ -6,8 +6,8 @@ namespace ExpressionPlayground
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
-    using ExpressionPlayground.Test;
-    using ExpressionPlayground.Test.Interfaces;
+    using Serpent.InterfaceProxy.NetFramework.Tests.Test;
+    using Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces;
 
     public class MockTemplate : ProxyBase<ITestInterface>, ITestInterface
     {

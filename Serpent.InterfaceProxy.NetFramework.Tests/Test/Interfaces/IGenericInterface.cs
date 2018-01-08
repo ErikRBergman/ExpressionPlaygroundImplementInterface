@@ -1,4 +1,4 @@
-﻿namespace ExpressionPlayground.Test.Interfaces
+﻿namespace Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces
 {
     using System.Collections.Generic;
 

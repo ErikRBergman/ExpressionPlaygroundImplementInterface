@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3A95DE7D-3B01-4EA9-B1BD-CD3EF76C49AB}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Serpent.InterfaceProxy</RootNamespace>
-    <AssemblyName>Serpent.InterfaceProxy.NetFramework</AssemblyName>
+    <ProjectGuid>{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>InterfaceCloneAndAddWithDebug</RootNamespace>
+    <AssemblyName>InterfaceCloneAndAddWithDebug</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -31,10 +33,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.Collections.Immutable, Version=1.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Immutable.1.2.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
-    </Reference>
-    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -44,26 +42,24 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
-    <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
-    <Compile Include="DefaultValues.cs" />
-    <Compile Include="ImplementationBuilders\DelegateBuilder.cs" />
-    <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
-    <Compile Include="Extensions\DictionaryExtensions.cs" />
-    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
-    <Compile Include="Extensions\MethodInfoExtensions.cs" />
-    <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
-    <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="GenerateTypeResult.cs" />
-    <Compile Include="ImplementInterfaceMethodResult.cs" />
+    <Compile Include="DictionaryExtensions.cs" />
+    <Compile Include="Interfaces\IActor.cs" />
+    <Compile Include="Interfaces\IDirt.cs" />
+    <Compile Include="Interfaces\IMyGenericInterface.cs" />
+    <Compile Include="Interfaces\IMyInterface.cs" />
+    <Compile Include="Interfaces\IMyOtherGenericInterface.cs" />
+    <Compile Include="Interfaces\IMyOtherInterface.cs" />
+    <Compile Include="Interfaces\IRubbish.cs" />
+    <Compile Include="Interfaces\IService.cs" />
+    <Compile Include="Models\MyModel.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ProxyTypeBuilder.cs" />
-    <Compile Include="TypeCloneBuilder.cs" />
-    <Compile Include="Types\TypeSubstitutor.cs" />
-    <Compile Include="Validation\Validator.cs" />
+    <Compile Include="TypeBuilderExtensions.cs" />
+    <Compile Include="TypeExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

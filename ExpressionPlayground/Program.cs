@@ -36,7 +36,6 @@ namespace ExpressionPlayground
 
             await Task.Yield();
            
-            // Todo: Generic interfaces
             // Todo: Return the proxy method chosen
             // Todo: Change the closure classes into structs to prevent the extra heap allocation
             // Todo: Add support for properties

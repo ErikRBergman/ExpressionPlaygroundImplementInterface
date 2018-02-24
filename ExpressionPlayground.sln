@@ -1,13 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2027
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpressionPlayground", "ExpressionPlayground\ExpressionPlayground.csproj", "{81481A20-8964-496E-B971-756486C5E34E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.InterfaceProxy.NetFramework", "Serpent.InterfaceProxy.NetFramework\Serpent.InterfaceProxy.NetFramework.csproj", "{3A95DE7D-3B01-4EA9-B1BD-CD3EF76C49AB}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.InterfaceProxy.NetFramework.Tests", "Serpent.InterfaceProxy.NetFramework.Tests\Serpent.InterfaceProxy.NetFramework.Tests.csproj", "{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceCloneAdd", "InterfaceCloneAdd\InterfaceCloneAdd.csproj", "{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceCloneAndAddWithDebug", "InterfaceCloneAndAddWithDebug\InterfaceCloneAndAddWithDebug.csproj", "{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +31,14 @@ Global
 		{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

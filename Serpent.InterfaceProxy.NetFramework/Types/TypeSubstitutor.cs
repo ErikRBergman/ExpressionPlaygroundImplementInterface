@@ -7,6 +7,11 @@ namespace Serpent.InterfaceProxy.Types
 
     public static class TypeSubstitutor
     {
+        public static Type GetSubstitute(this IReadOnlyDictionary<Type, Type> substitutes, Type mainType)
+        {
+            return GetSubstitutedType(mainType, substitutes);
+        }
+
         public static Type GetSubstitutedType(Type mainType, IReadOnlyDictionary<Type, Type> substitutes)
         {
             var itemType = mainType;

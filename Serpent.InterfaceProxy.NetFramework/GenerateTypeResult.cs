@@ -3,9 +3,9 @@
     using System;
     using System.Collections.Generic;
 
-    public struct GenerateProxyResult
+    public struct GenerateTypeResult
     {
-        public GenerateProxyResult(Type generatedType, IEnumerable<Type> interfacesImplemented, Delegate factory)
+        public GenerateTypeResult(Type generatedType, IEnumerable<Type> interfacesImplemented, Delegate factory)
         {
             this.GeneratedType = generatedType;
             this.InterfacesImplemented = interfacesImplemented;

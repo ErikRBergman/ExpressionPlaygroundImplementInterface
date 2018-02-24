@@ -10,7 +10,7 @@
     {
         public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder)
         {
-            var generatedType = proxyTypeBuilder.GenerateProxy(typeof(TInterfaceType));
+            var generatedType = proxyTypeBuilder.GenerateTypeClone(new GenerateTypeParameters(typeof(TInterfaceType)));
 
             return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factory);
         }

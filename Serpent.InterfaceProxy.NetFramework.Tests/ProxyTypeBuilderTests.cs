@@ -232,10 +232,9 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
             {
                 ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("D")
-            };
-
-            proxyTypeBuilder.ProxyTypeNameSelectorFunc = (type, s) => s + "_" + type.Name + "_" + Guid.NewGuid().ToString("D");
+                    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("D"),
+                ProxyTypeNameSelectorFunc = (type, s) => s + "_" + type.Name + "_" + Guid.NewGuid().ToString("D")
+        };
 
             return proxyTypeBuilder.GenerateProxy<ITestInterface>();
         }

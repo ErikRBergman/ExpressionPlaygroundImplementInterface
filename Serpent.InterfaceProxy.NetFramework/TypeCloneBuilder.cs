@@ -12,78 +12,76 @@
     using Serpent.InterfaceProxy.Types;
     using Serpent.InterfaceProxy.Validation;
 
-    public class TypeCloneBuilder<TMethodContext>
+    public class GenerateTypeParameters
     {
-        private readonly Func<Type, Type> proxyBaseTypeFactoryFunc;
-
-        public TypeCloneBuilder(Func<Type, Type> parentTypeFactoryFunc)
+        public GenerateTypeParameters(Type sourceType)
         {
-            this.proxyBaseTypeFactoryFunc = parentTypeFactoryFunc ?? throw new ArgumentNullException(nameof(parentTypeFactoryFunc));
+            this.SourceType = sourceType;
         }
 
-        public TypeCloneBuilder(Type parentType)
-            : this()
-        {
-            Validator.Default.IsNotNull(parentType, nameof(parentType));
+        public Type ParentType { get; set; }
 
-            if (parentType.ContainsGenericParameters)
-            {
-                var parentGenericArguments = parentType.GetGenericArguments();
+        public Type SourceType { get; }
 
-                if (parentGenericArguments.Length != 1)
-                {
-                    throw new Exception("Parent type has more than one generic argument. Use the constructor with a factory function instead.");
-                }
+        public string CreatedTypeName { get; set; }
 
-                this.proxyBaseTypeFactoryFunc = t => parentType.MakeGenericType(t);
-            }
-            else
-            {
-                this.proxyBaseTypeFactoryFunc = t => parentType;
-            }
-        }
+        public bool CreateConstructors { get; set; }
+    }
 
-        private TypeCloneBuilder()
+    public class TypeCloneBuilder<TTypeContext, TMethodContext>
+    where TTypeContext : BaseTypeCloneTypeContext
+    {
+        public TypeCloneBuilder()
         {
             this.Namespace = this.Namespace ?? DefaultValues.DefaultTypeNamespace;
 
             this.ModuleBuilder = DefaultValues.DefaultModuleBuilder;
-
-            // Default delegates for names
-            this.ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
-
-            this.ProxyTypeNameSelectorFunc = (@interface, @namespace) => @namespace + "." + @interface.Name + "+proxy";
         }
-
-        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; }
 
         public ModuleBuilder ModuleBuilder { get; set; }
 
         public string Namespace { get; set; }
 
-        public Func<Type, string, string> ProxyTypeNameSelectorFunc { get; set; }
+        protected virtual TTypeContext CreateTypeContext(GenerateTypeParameters parameters, TypeBuilder typeBuilder)
+        {
+            return default(TTypeContext);
+        }
 
-        public GenerateTypeResult GenerateProxy(Type interfaceToImplement, string typeName = null)
+        public virtual GenerateTypeResult GenerateTypeClone(GenerateTypeParameters parameters)
         {
             var validator = Validator.Default;
 
-            validator.IsNotNull(interfaceToImplement, nameof(interfaceToImplement)).IsInterface(interfaceToImplement, nameof(interfaceToImplement));
+            validator.IsNotNull(parameters, nameof(parameters));
+            validator.IsNotNull(parameters.SourceType, nameof(parameters) + "." + nameof(parameters.SourceType));
 
-            var parentType = this.proxyBaseTypeFactoryFunc(interfaceToImplement);
+            var sourceType = parameters.SourceType;
 
-            typeName = typeName ?? this.ProxyTypeNameSelectorFunc(interfaceToImplement, this.Namespace);
+            validator.IsNotNull(sourceType, nameof(sourceType)).IsInterface(sourceType, nameof(sourceType));
 
-            var typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public, parentType);
-            typeBuilder.AddInterfaceImplementation(interfaceToImplement);
+            var typeName = parameters.CreatedTypeName;
+            var parentType = parameters.ParentType;
+
+            TypeBuilder typeBuilder;
+            if (parentType != null)
+            {
+                typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public, parentType);
+            }
+            else
+            {
+                typeBuilder = this.ModuleBuilder.DefineType(typeName, TypeAttributes.Public);
+            }
+
+            typeBuilder.AddInterfaceImplementation(sourceType);
 
             DefaultConstructorGenerator.CreateDefaultConstructors(typeBuilder, parentType);
+            
+            var typeContext = this.CreateTypeContext(parameters, typeBuilder);
 
-            var result = this.ImplementInterfaceMethods(typeBuilder, interfaceToImplement.GetAllInterfaces(), parentType);
+            var result = this.ImplementInterfaceMethods(typeContext, sourceType.GetAllInterfaces(), parentType);
 
             var generatedType = typeBuilder.CreateTypeInfo();
 
-            var factory = GenerateFactoryDelegate(interfaceToImplement, generatedType);
+            var factory = GenerateFactoryDelegate(sourceType, generatedType);
 
             return new GenerateTypeResult(generatedType, result.InterfacesImplemented, factory);
         }
@@ -176,6 +174,7 @@
         }
 
         protected virtual TMethodContext CreateMethodContext(
+            TTypeContext typeContext,
             Type @interface,
             TypeBuilder typeBuilder,
             MethodInfo sourceMethodInfo,
@@ -185,7 +184,8 @@
             return default(TMethodContext);
         }
 
-        private ImmutableList<string> ImplementInterfaceMethod(
+        private ImmutableList<string> CreateMethod(
+            TTypeContext typeContext,
             TypeBuilder typeBuilder,
             Type @interface,
             ImmutableList<string> usedNames,
@@ -215,7 +215,7 @@
                 {
                 }
 
-                var methodContext = this.CreateMethodContext(@interface, typeBuilder, sourceMethod, parameters, genericArguments);
+                var methodContext = this.CreateMethodContext(typeContext, @interface, typeBuilder, sourceMethod, parameters, genericArguments);
 
                 // Methods.MethodBuilder.EmitMethodImplementation(@interface, method, typeBuilder, genericArguments, finalClosureType, finalDelegateMethod, parentType);
                 var interfaceImplementationMethodBuilder = CreateMethod(
@@ -233,22 +233,37 @@
             return usedNames;
         }
 
-        private ImplementInterfaceMethodResult ImplementInterfaceMethods(TypeBuilder typeBuilder, IEnumerable<Type> interfaces, Type parentType)
+        private ImplementInterfaceMethodResult ImplementInterfaceMethods(TTypeContext typeContext, IEnumerable<Type> interfaces, Type parentType)
         {
             var result = ImplementInterfaceMethodResult.Empty;
 
             foreach (var interfaceType in interfaces)
             {
                 result = result.AddUsedNames(
-                    this.ImplementInterfaceMethod(
-                        typeBuilder,
+                    this.CreateMethod(
+                        typeContext,
+                        typeContext.TypeBuilder,
                         interfaceType,
                         result.NamesUsed,
                         parentType));
+
                 result = result.AddImplementedInterface(interfaceType);
             }
 
             return result;
+        }
+    }
+
+    public class BaseTypeCloneTypeContext
+    {
+        public GenerateTypeParameters Parameters { get; }
+
+        public TypeBuilder TypeBuilder { get; }
+
+        public BaseTypeCloneTypeContext(GenerateTypeParameters parameters, TypeBuilder typeBuilder)
+        {
+            this.Parameters = parameters;
+            this.TypeBuilder = typeBuilder;
         }
     }
 }

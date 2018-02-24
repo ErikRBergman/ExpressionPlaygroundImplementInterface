@@ -13,18 +13,66 @@ namespace Serpent.InterfaceProxy
 
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.ImplementationBuilders;
+    using Serpent.InterfaceProxy.Validation;
 
-    public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.ProxyTypeBuilderContext>
+    public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
     {
-        public ProxyTypeBuilder(Func<Type, Type> parentTypeFactoryFunc)
-            : base(parentTypeFactoryFunc)
+        private readonly Type parentType;
+
+        private readonly Func<Type, Type> proxyBaseTypeFactoryFunc;
+
+        public ProxyTypeBuilder(Type parentType, Func<Type, Type> parentTypeFactoryFunc)
+            : this()
         {
+            this.parentType = parentType;
+            this.proxyBaseTypeFactoryFunc = parentTypeFactoryFunc ?? throw new ArgumentNullException(nameof(parentTypeFactoryFunc));
+        }
+
+        public override GenerateTypeResult GenerateTypeClone(GenerateTypeParameters parameters)
+        {
+            parameters.CreatedTypeName = parameters.CreatedTypeName ?? this.ProxyTypeNameSelectorFunc(parameters.SourceType, this.Namespace);
+            parameters.CreateConstructors = true;
+            parameters.ParentType = this.parentType;
+            return base.GenerateTypeClone(parameters);
+        }
+
+        private ProxyTypeBuilder()
+        {
+            // Default delegates for names
+            this.ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
+                @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
+
+            this.ProxyTypeNameSelectorFunc = (@interface, @namespace) => @namespace + "." + @interface.Name + "+proxy";
         }
 
         public ProxyTypeBuilder(Type parentType)
-            : base(parentType)
+            : this()
         {
+            Validator.Default.IsNotNull(parentType, nameof(parentType));
+
+            this.parentType = parentType;
+
+            if (parentType.ContainsGenericParameters)
+            {
+                var parentGenericArguments = parentType.GetGenericArguments();
+
+                if (parentGenericArguments.Length != 1)
+                {
+                    throw new Exception("Parent type has more than one generic argument. Use the constructor with a factory function instead.");
+                }
+
+                this.proxyBaseTypeFactoryFunc = t => parentType.MakeGenericType(t);
+            }
+            else
+            {
+                this.proxyBaseTypeFactoryFunc = t => parentType;
+            }
         }
+
+        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; }
+
+        public Func<Type, string, string> ProxyTypeNameSelectorFunc { get; set; }
+
 
         public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
@@ -32,59 +80,40 @@ namespace Serpent.InterfaceProxy
                 .Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
         }
 
-        protected override ProxyTypeBuilderContext CreateMethodContext(
+        protected override MethodContext CreateMethodContext(
+            TypeContext typeContext,
             Type @interface,
             TypeBuilder typeBuilder,
             MethodInfo sourceMethodInfo,
             ParameterInfo[] parameters,
             Type[] genericArguments)
         {
-            TypeBuilder CreateClosureTypeFunc(Type interfaceType, MethodInfo method)
+            TypeBuilder createClosureTypeFunc(Type interfaceType, MethodInfo method)
             {
-                var closureTypeName = this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
+                var closureTypeName = this.ClosureTypeNameSelector(interfaceType, method, this.Namespace);
                 return ClosureBuilder.CreateClosureTypeBuilder(this.ModuleBuilder, closureTypeName);
             }
 
-            var finalClosureType = GetFinalClosureType(@interface, CreateClosureTypeFunc, parameters, sourceMethodInfo, genericArguments);
+            var finalClosureType = GetFinalClosureType(@interface, createClosureTypeFunc, parameters, sourceMethodInfo, genericArguments);
             var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, sourceMethodInfo, finalClosureType, genericArguments);
 
-            return new ProxyTypeBuilderContext
+            return new MethodContext(typeContext)
                        {
                            ClosureFinalType = finalClosureType,
                            FinalDelegateMethodInfo = finalDelegateMethod
                        };
         }
 
-        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
+        protected override TypeContext CreateTypeContext(GenerateTypeParameters parameters, TypeBuilder typeBuilder)
         {
-            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
-            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
-            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
-        }
-
-        private static Type GetFinalClosureType(
-            Type @interface,
-            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc,
-            ParameterInfo[] parameters,
-            MethodInfo method,
-            Type[] genericArguments)
-        {
-            Type closureFinalType = null;
-
-            if (parameters.Length > 0)
-            {
-                var closureTypeBuilder = createClosureTypeFunc(@interface, method);
-                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
-            }
-
-            return closureFinalType;
+            return new TypeContext(parameters, typeBuilder);
         }
 
         protected override void EmitMethodImplementation(
             Type interfaceType,
             MethodInfo sourceMethodInfo,
             MethodBuilder methodBuilder,
-            ProxyTypeBuilderContext context,
+            MethodContext context,
             Type parentType)
         {
             var closureFinalType = context.ClosureFinalType;
@@ -181,6 +210,31 @@ namespace Serpent.InterfaceProxy
             return delegateType;
         }
 
+        private static Type GetFinalClosureType(
+            Type @interface,
+            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            ParameterInfo[] parameters,
+            MethodInfo method,
+            Type[] genericArguments)
+        {
+            Type closureFinalType = null;
+
+            if (parameters.Length > 0)
+            {
+                var closureTypeBuilder = createClosureTypeFunc(@interface, method);
+                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+            }
+
+            return closureFinalType;
+        }
+
+        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
+        {
+            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
+            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
+        }
+
         private static MethodInfo GetProxyMethod(
             Type closureFinalType,
             Type parentType,
@@ -232,11 +286,25 @@ namespace Serpent.InterfaceProxy
             return executeAsync;
         }
 
-        public class ProxyTypeBuilderContext
+        public class MethodContext
         {
+            public MethodContext(TypeContext typeContext)
+            {
+                this.TypeContext = typeContext;
+            }
+
             public Type ClosureFinalType { get; set; }
 
             public MethodInfo FinalDelegateMethodInfo { get; set; }
+
+            public TypeContext TypeContext { get; }
+        }
+
+        public class TypeContext : BaseTypeCloneTypeContext
+        {
+            public TypeContext(GenerateTypeParameters parameters, TypeBuilder typeBuilder) : base(parameters, typeBuilder)
+            {
+            }
         }
     }
 }

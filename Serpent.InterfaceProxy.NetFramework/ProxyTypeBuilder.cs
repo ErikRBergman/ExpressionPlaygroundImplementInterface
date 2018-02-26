@@ -16,17 +16,7 @@ namespace Serpent.InterfaceProxy
 
     public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.ProxyTypeBuilderContext>
     {
-        public ProxyTypeBuilder(Func<Type, Type> parentTypeFactoryFunc)
-            : base(parentTypeFactoryFunc)
-        {
-        }
-
-        public ProxyTypeBuilder(Type parentType)
-            : base(parentType)
-        {
-        }
-
-        public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
+            public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
             return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
@@ -41,7 +31,7 @@ namespace Serpent.InterfaceProxy
         {
             TypeBuilder CreateClosureTypeFunc(Type interfaceType, MethodInfo method)
             {
-                var closureTypeName = this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
+                var closureTypeName = method.Name + "_closure_" + Guid.NewGuid().ToString("N"); // this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
                 return ClosureBuilder.CreateClosureTypeBuilder(this.ModuleBuilder, closureTypeName);
             }
 

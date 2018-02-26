@@ -5,18 +5,18 @@
 
     public struct GenerateTypeResult
     {
-        public GenerateTypeResult(Type generatedType, IEnumerable<Type> interfacesImplemented, Delegate factory)
+        public GenerateTypeResult(Type generatedType, IEnumerable<Type> interfacesImplemented, IEnumerable<Delegate> factories)
         {
             this.GeneratedType = generatedType;
             this.InterfacesImplemented = interfacesImplemented;
-            this.Factory = factory;
+            this.Factories = factories;
         }
 
         public Type GeneratedType { get; }
 
         public IEnumerable<Type> InterfacesImplemented { get; }
 
-        public Delegate Factory { get; }
+        public IEnumerable<Delegate> Factories { get; }
     }
 
     public struct GenerateProxyResult<TInterface>

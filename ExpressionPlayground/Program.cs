@@ -24,13 +24,9 @@ namespace ExpressionPlayground
             var newType = SubstituteTypes<decimal, double, byte, string, float, short>(
                 new KeyValuePair<KeyValuePair<decimal, KeyValuePair<double, byte>>, KeyValuePair<double, KeyValuePair<byte, double>>>());
 
-            var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
-                                       {
-                                           ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                                               @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure"
-                                       };
+            var proxyTypeBuilder = new ProxyTypeBuilder();
 
-            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>();
+            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>(typeof(ProxyBase<>));
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 

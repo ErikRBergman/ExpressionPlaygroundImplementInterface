@@ -1,6 +1,7 @@
 ﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
+    using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
 
@@ -8,35 +9,19 @@
 
     public static class ProxyTypeBuilderExtensions
     {
-        public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder)
+        public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder, Type parentType)
         {
-            var generatedType = proxyTypeBuilder.GenerateProxy(typeof(TInterfaceType));
+            var parameters = TypeCloneBuilderParameters
+                .New
+                .AddInterface(typeof(TInterfaceType))
+                .TypeName(typeof(TInterfaceType).FullName)
+                .ParentType(parentType);
 
-            return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factory);
+            var generatedType = proxyTypeBuilder.GenerateType(parameters);
+
+            return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factories.FirstOrDefault(f => f is Func<TInterfaceType, TInterfaceType>));
         }
 
-        public static ProxyTypeBuilder Namespace(this ProxyTypeBuilder proxyTypeBuilder, string @namespace)
-        {
-            proxyTypeBuilder.Namespace = @namespace;
-            return proxyTypeBuilder;
-        }
 
-        public static ProxyTypeBuilder ClosureTypeNameSelector(this ProxyTypeBuilder proxyTypeBuilder, Func<Type, MethodInfo, string, string> closureTypeNameSelector)
-        {
-            proxyTypeBuilder.ClosureTypeNameSelector = closureTypeNameSelector ?? throw new ArgumentNullException(nameof(closureTypeNameSelector));
-            return proxyTypeBuilder;
-        }
-
-        public static ProxyTypeBuilder ModuleBuilder(this ProxyTypeBuilder proxyTypeBuilder, ModuleBuilder moduleBuilder)
-        {
-            proxyTypeBuilder.ModuleBuilder = moduleBuilder;
-            return proxyTypeBuilder;
-        }
-
-        public static ProxyTypeBuilder ProxyTypeNameSelector(this ProxyTypeBuilder proxyTypeBuilder, Func<Type, string, string> proxyTypeNameSelectorFunc)
-        {
-            proxyTypeBuilder.ProxyTypeNameSelectorFunc = proxyTypeNameSelectorFunc;
-            return proxyTypeBuilder;
-        }
     }
 }

@@ -229,15 +229,25 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
 
         private static GenerateProxyResult<ITestInterface> GetProxyTypeInformation()
         {
-            var proxyTypeBuilder = new ProxyTypeBuilder(typeof(ProxyBase<>))
-            {
-                ClosureTypeNameSelector = (@interface, methodInfo, @namespace) =>
-                    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("D")
-            };
+            var parameters = TypeCloneBuilderParameters
+                .New
+                .AddInterface(typeof(ITestInterface))
+                .ParentType(typeof(ProxyBase<>).MakeGenericType(typeof(ITestInterface)))
+                .TypeName(typeof(ITestInterface).FullName + "_" + Guid.NewGuid().ToString("N"))
+                .ClosureTypeNameSelectorFunc((@interface, methodInfo, @namespace) =>
+                        @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("D"))
+                ;
 
-            proxyTypeBuilder.ProxyTypeNameSelectorFunc = (type, s) => s + "_" + type.Name + "_" + Guid.NewGuid().ToString("D");
+            //proxyTypeBuilder.ProxyTypeNameSelectorFunc = (type, s) => s + "_" + type.Name + "_" + Guid.NewGuid().ToString("D");
 
-            return proxyTypeBuilder.GenerateProxy<ITestInterface>();
+            var proxyTypeBuilder = new ProxyTypeBuilder();
+
+            var generatedType = proxyTypeBuilder.GenerateType(parameters);
+
+            return new GenerateProxyResult<ITestInterface>(
+                generatedType.GeneratedType,
+                generatedType.InterfacesImplemented,
+                (Func<ITestInterface, ITestInterface>)generatedType.Factories.FirstOrDefault(f => f is Func<ITestInterface, ITestInterface>));
         }
 
         public struct GenericStruct<T>

@@ -43,7 +43,7 @@ namespace InterfaceCloneAndAddWithDebug
 
             foreach (var @interface in interfaces.Reverse())
             {
-                var interfaceFullName = @interface.FullName ?? @interface.Namespace + "."+ @interface.Name;
+                var interfaceFullName = @interface.FullName ?? @interface.Namespace + "." + @interface.Name;
 
                 Console.WriteLine($" * {interfaceFullName}");
 
@@ -91,9 +91,9 @@ namespace InterfaceCloneAndAddWithDebug
 
 
                 var newMethod = newInterfaceTypeBuilder.DefineMethod(
-                    method.Name, 
-                    method.Attributes, 
-                    method.CallingConvention, 
+                    method.Name,
+                    method.Attributes,
+                    method.CallingConvention,
                     method.ReturnType,
                     parameterTypes.ToArray());
 

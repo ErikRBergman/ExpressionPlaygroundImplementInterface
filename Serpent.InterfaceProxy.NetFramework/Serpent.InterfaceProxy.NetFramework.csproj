@@ -59,6 +59,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyTypeBuilder.cs" />
     <Compile Include="TypeCloneBuilder.cs" />
+    <Compile Include="TypeCloneBuilderParameters.cs" />
+    <Compile Include="TypeCloneBuilderParametersExtensions.cs" />
     <Compile Include="Types\TypeSubstitutor.cs" />
     <Compile Include="Validation\Validator.cs" />
   </ItemGroup>

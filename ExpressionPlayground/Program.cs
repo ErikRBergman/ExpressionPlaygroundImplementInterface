@@ -26,7 +26,7 @@ namespace ExpressionPlayground
 
             var proxyTypeBuilder = new ProxyTypeBuilder();
 
-            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>(typeof(ProxyBase<>));
+            var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>(typeof(ProxyBase<ITestInterface>));
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 

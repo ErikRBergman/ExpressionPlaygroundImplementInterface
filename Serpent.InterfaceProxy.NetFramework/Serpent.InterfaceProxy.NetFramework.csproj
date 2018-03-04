@@ -44,6 +44,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseMethodContext.cs" />
+    <Compile Include="BaseTypeContext.cs" />
     <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
     <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
     <Compile Include="DefaultValues.cs" />
@@ -58,6 +60,7 @@
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ProxyTypeBuilder.cs" />
+    <Compile Include="TypeBuilderMethodParameter.cs" />
     <Compile Include="TypeCloneBuilder.cs" />
     <Compile Include="TypeCloneBuilderParameters.cs" />
     <Compile Include="TypeCloneBuilderParametersExtensions.cs" />

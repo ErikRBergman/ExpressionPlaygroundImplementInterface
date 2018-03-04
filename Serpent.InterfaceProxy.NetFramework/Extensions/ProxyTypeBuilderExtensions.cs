@@ -9,12 +9,12 @@
 
     public static class ProxyTypeBuilderExtensions
     {
-        public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder, Type parentType)
+        public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder, Type parentType, string typeName = null)
         {
             var parameters = TypeCloneBuilderParameters
                 .New
                 .AddInterface(typeof(TInterfaceType))
-                .TypeName(typeof(TInterfaceType).FullName)
+                .TypeName(typeName ?? (typeof(TInterfaceType).FullName + "Proxy"))
                 .ParentType(parentType);
 
             var generatedType = proxyTypeBuilder.GenerateType(parameters);

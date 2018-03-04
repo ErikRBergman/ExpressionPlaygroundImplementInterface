@@ -14,7 +14,7 @@ namespace Serpent.InterfaceProxy
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.ImplementationBuilders;
 
-    public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.ProxyTypeBuilderContext>
+    public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
     {
             public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
         {
@@ -22,7 +22,7 @@ namespace Serpent.InterfaceProxy
                 .Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
         }
 
-        protected override ProxyTypeBuilderContext CreateMethodContext(
+        protected override MethodContext CreateMethodContext(
             Type @interface,
             TypeBuilder typeBuilder,
             MethodInfo sourceMethodInfo,
@@ -38,7 +38,7 @@ namespace Serpent.InterfaceProxy
             var finalClosureType = GetFinalClosureType(@interface, CreateClosureTypeFunc, parameters, sourceMethodInfo, genericArguments);
             var finalDelegateMethod = GetFinalDelegateMethod(typeBuilder, @interface, sourceMethodInfo, finalClosureType, genericArguments);
 
-            return new ProxyTypeBuilderContext
+            return new MethodContext
                        {
                            ClosureFinalType = finalClosureType,
                            FinalDelegateMethodInfo = finalDelegateMethod
@@ -74,7 +74,7 @@ namespace Serpent.InterfaceProxy
             Type interfaceType,
             MethodInfo sourceMethodInfo,
             MethodBuilder methodBuilder,
-            ProxyTypeBuilderContext context,
+            MethodContext context,
             Type parentType)
         {
             var closureFinalType = context.ClosureFinalType;
@@ -222,11 +222,17 @@ namespace Serpent.InterfaceProxy
             return executeAsync;
         }
 
-        public class ProxyTypeBuilderContext
+        public class MethodContext : BaseMethodContext
         {
             public Type ClosureFinalType { get; set; }
 
             public MethodInfo FinalDelegateMethodInfo { get; set; }
         }
+
+        public class TypeContext : BaseTypeContext
+        {
+        }
+
+
     }
 }

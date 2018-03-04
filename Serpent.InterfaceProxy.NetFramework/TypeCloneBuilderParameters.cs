@@ -1,6 +1,7 @@
 ﻿namespace Serpent.InterfaceProxy
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -23,14 +24,16 @@
 
         public string TypeName { get; set; }
 
-        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; }  = (@interface, methodInfo, @namespace) => @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
+        public MethodAttributes MethodAttributes { get; set; } =
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Final;
+
+        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; } = (@interface, methodInfo, @namespace) =>
+            @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
 
         public string Namespace { get; set; } = DefaultValues.DefaultTypeNamespace;
 
         public ModuleBuilder ModuleBuilder { get; set; }
+
+        public Func<MethodInfo, Type, IEnumerable<TypeBuilderMethodParameter>, IEnumerable<TypeBuilderMethodParameter>> MethodModifierFunc { get; set; }
     }
-
-
-
-
 }

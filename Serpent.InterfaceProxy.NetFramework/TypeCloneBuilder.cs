@@ -1,4 +1,5 @@
-﻿namespace Serpent.InterfaceProxy
+﻿// ReSharper disable StyleCop.SA1402
+namespace Serpent.InterfaceProxy
 {
     using System;
     using System.Collections.Generic;
@@ -12,7 +13,9 @@
     using Serpent.InterfaceProxy.Types;
     using Serpent.InterfaceProxy.Validation;
 
-    public class TypeCloneBuilder<TMethodContext>
+    public class TypeCloneBuilder<TTypeContext, TMethodContext>
+        where TTypeContext : BaseTypeContext, new()
+        where TMethodContext : BaseMethodContext, new()
     {
         public TypeCloneBuilder()
         {
@@ -41,11 +44,20 @@
                 typeBuilder.AddInterfaceImplementation(@interface);
             }
 
-            DefaultConstructorGenerator.CreateDefaultConstructors(typeBuilder, parentType);
+            if (parentType != null)
+            {
+                DefaultConstructorGenerator.CreateDefaultConstructors(typeBuilder, parentType);
+            }
 
-            var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces());
+            var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces()).ToArray();
 
-            var createMethodsResult = this.CreateMethods(typeBuilder, interfaces, parentType);
+            var typeContext = new TTypeContext
+                                  {
+                                      TypeBuilder = typeBuilder,
+                                      Parameters = parameters
+                                  };
+
+            var createMethodsResult = this.CreateMethods(typeContext, interfaces, parentType);
 
             // Generate the type
             var generatedType = typeBuilder.CreateTypeInfo();
@@ -80,21 +92,23 @@
         }
 
         private static MethodBuilder CreateMethod(
-            TypeBuilder typeBuilder,
+            TTypeContext typeContext,
             MethodInfo sourceMethodInfo,
-            ParameterInfo[] parameters,
+            ParameterInfo[] sourceMethodParameters,
             Type[] genericArguments,
             string[] genericArgumentNames)
         {
-            if (sourceMethodInfo.Name == "GenericsAndVarArgs")
-            {
-            }
+            var typeBuilder = typeContext.TypeBuilder;
+
+            Func<MethodInfo, Type, IEnumerable<TypeBuilderMethodParameter>, IEnumerable<TypeBuilderMethodParameter>> parameterFunc = typeContext.Parameters.MethodModifierFunc ?? ((MethodInfo m, Type t, IEnumerable<TypeBuilderMethodParameter> ps) => ps);
+
+            var newParameters = parameterFunc(sourceMethodInfo, sourceMethodInfo.ReturnType, sourceMethodParameters.Select(p => new TypeBuilderMethodParameter(p))).ToArray();
 
             var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                 sourceMethodInfo.Name,
-                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Final,
+                typeContext.Parameters.MethodAttributes,
                 sourceMethodInfo.ReturnType,
-                parameters.Select(pi => pi.ParameterType).ToArray());
+                newParameters.Select(pi => pi.ParameterType).ToArray());
 
             if (genericArguments.Any())
             {
@@ -108,7 +122,7 @@
                 interfaceImplementationMethodBuilder.SetReturnType(newReturnType);
             }
 
-            UpdateParameterAttributes(interfaceImplementationMethodBuilder, parameters);
+            UpdateParameterAttributes(interfaceImplementationMethodBuilder, newParameters);
 
             return interfaceImplementationMethodBuilder;
         }
@@ -134,15 +148,13 @@
             return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
         }
 
-        private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, ParameterInfo[] parameters)
+        private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
         {
             for (var i = 0; i < parameters.Length; i++)
             {
                 var builder = interfaceImplementationMethodBuilder.DefineParameter(i + 1, parameters[i].Attributes, parameters[i].Name);
 
-                var paramArrayAttribute = parameters[i].GetCustomAttribute<ParamArrayAttribute>();
-
-                if (paramArrayAttribute != null)
+                if (parameters[i].HasParamArrayArgument)
                 {
                     var attributeBuilder = new CustomAttributeBuilder(
                         typeof(ParamArrayAttribute).GetConstructors().First(c => c.IsPublic && c.GetParameters().Length == 0),
@@ -167,8 +179,8 @@
             return default(TMethodContext);
         }
 
-        private ImmutableList<string> ImplementInterfaceMethod(
-            TypeBuilder typeBuilder,
+        private ImmutableList<string> CreateInterfaceMethods(
+            TTypeContext typeContext,
             Type @interface,
             ImmutableList<string> usedNames,
             Type parentType)
@@ -197,17 +209,14 @@
                 {
                 }
 
-                var methodContext = this.CreateMethodContext(@interface, typeBuilder, sourceMethod, parameters, genericArguments);
+                var methodContext = this.CreateMethodContext(@interface, typeContext.TypeBuilder, sourceMethod, parameters, genericArguments);
 
-                // Methods.MethodBuilder.EmitMethodImplementation(@interface, method, typeBuilder, genericArguments, finalClosureType, finalDelegateMethod, parentType);
                 var interfaceImplementationMethodBuilder = CreateMethod(
-                    typeBuilder,
+                    typeContext,
                     sourceMethod,
                     parameters,
                     genericArguments,
                     genericArgumentNames);
-
-                //this.EmitMethodImplementation(@interface, method, interfaceImplementationMethodBuilder, finalClosureType, finalDelegateMethod, parentType);
 
                 this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, methodContext, parentType);
             }
@@ -215,22 +224,36 @@
             return usedNames;
         }
 
-        private ImplementInterfaceMethodResult CreateMethods(TypeBuilder typeBuilder, IEnumerable<Type> interfaces, Type parentType)
+        private ImplementInterfaceMethodResult CreateMethods(TTypeContext typeContext, IEnumerable<Type> interfaces, Type parentType)
         {
             var result = ImplementInterfaceMethodResult.Empty;
 
             foreach (var interfaceType in interfaces)
             {
                 result = result.AddUsedNames(
-                    this.ImplementInterfaceMethod(
-                        typeBuilder,
+                    this.CreateInterfaceMethods(
+                        typeContext,
                         interfaceType,
                         result.NamesUsed,
                         parentType));
+
                 result = result.AddImplementedInterface(interfaceType);
             }
 
             return result;
+        }
+    }
+
+    public class TypeCloneBuilder : TypeCloneBuilder<TypeCloneBuilder.TypeCloneBuilderTypeContext, TypeCloneBuilder.TypeCloneBuilderMethodContext>
+    {
+        public class TypeCloneBuilderMethodContext : BaseMethodContext
+        {
+
+        }
+
+        public class TypeCloneBuilderTypeContext : BaseTypeContext
+        {
+
         }
     }
 }

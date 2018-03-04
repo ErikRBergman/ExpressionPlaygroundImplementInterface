@@ -6,14 +6,22 @@
 
     public static class TypeCloneBuilderParametersExtensions
     {
-        public static TypeCloneBuilderParameters SetNewTypeIsInterface(this TypeCloneBuilderParameters parameters)
+        public static TypeCloneBuilderParameters OutputInterface(this TypeCloneBuilderParameters parameters)
         {
-            return parameters.NewTypeAttributes(TypeAttributes.Interface | TypeAttributes.Abstract | TypeAttributes.Public);
+            return parameters
+                .TypeAttributes(System.Reflection.TypeAttributes.Interface | System.Reflection.TypeAttributes.Abstract | System.Reflection.TypeAttributes.Public)
+                .MethodAttributes(System.Reflection.MethodAttributes.Public | System.Reflection.MethodAttributes.Virtual | System.Reflection.MethodAttributes.HideBySig | System.Reflection.MethodAttributes.NewSlot | System.Reflection.MethodAttributes.Abstract);
         }
 
-        public static TypeCloneBuilderParameters NewTypeAttributes(this TypeCloneBuilderParameters parameters, TypeAttributes typeAttributes)
+        public static TypeCloneBuilderParameters TypeAttributes(this TypeCloneBuilderParameters parameters, TypeAttributes typeAttributes)
         {
             parameters.TypeAttributes = typeAttributes;
+            return parameters;
+        }
+
+        public static TypeCloneBuilderParameters MethodAttributes(this TypeCloneBuilderParameters parameters, MethodAttributes methodAttributes)
+        {
+            parameters.MethodAttributes = methodAttributes;
             return parameters;
         }
 

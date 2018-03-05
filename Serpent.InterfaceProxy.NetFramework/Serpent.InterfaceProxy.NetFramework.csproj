@@ -46,6 +46,8 @@
   <ItemGroup>
     <Compile Include="BaseMethodContext.cs" />
     <Compile Include="BaseTypeContext.cs" />
+    <Compile Include="CreateMethodData.cs" />
+    <Compile Include="CreateMethodFuncResult.cs" />
     <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
     <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
     <Compile Include="DefaultValues.cs" />

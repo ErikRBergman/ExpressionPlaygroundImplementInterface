@@ -6,9 +6,11 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
-    public class TypeCloneBuilderParameters
+    public class TypeCloneBuilderParameters<TTypeContext, TMethodContext>
+        where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+      where TMethodContext : BaseMethodContext
     {
-        public static TypeCloneBuilderParameters New => new TypeCloneBuilderParameters();
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> New => new TypeCloneBuilderParameters<TTypeContext, TMethodContext>();
 
         /// <summary>
         ///     A predicate indicating whether to implement the interface the source type is implementing or not
@@ -34,6 +36,6 @@
 
         public ModuleBuilder ModuleBuilder { get; set; }
 
-        public Func<MethodInfo, Type, IEnumerable<TypeBuilderMethodParameter>, IEnumerable<TypeBuilderMethodParameter>> MethodModifierFunc { get; set; }
+        public Func<CreateMethodData, TTypeContext, CreateMethodFuncResult<TMethodContext>> CreateMethodFunc { get; set; }
     }
 }

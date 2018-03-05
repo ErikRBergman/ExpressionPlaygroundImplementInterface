@@ -11,7 +11,7 @@
     {
         public static GenerateProxyResult<TInterfaceType> GenerateProxy<TInterfaceType>(this ProxyTypeBuilder proxyTypeBuilder, Type parentType, string typeName = null)
         {
-            var parameters = TypeCloneBuilderParameters
+            var parameters = TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
                 .New
                 .AddInterface(typeof(TInterfaceType))
                 .TypeName(typeName ?? (typeof(TInterfaceType).FullName + "Proxy"))

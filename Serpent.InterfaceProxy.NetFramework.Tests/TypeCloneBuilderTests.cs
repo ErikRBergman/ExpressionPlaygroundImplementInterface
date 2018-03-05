@@ -15,7 +15,7 @@
 
         }
 
-        private class TypeContext : BaseTypeContext
+        private class TypeContext : BaseTypeContext<TypeContext, MethodContext>
         {
 
         }
@@ -23,7 +23,7 @@
         [TestMethod]
         public void CreateModifiedInterfaceTest()
         {
-            var parameters = TypeCloneBuilderParameters
+            var parameters = TypeCloneBuilderParameters<TypeContext, MethodContext>
                     .New
                     .AddInterface(typeof(ITestInterface))
                     .TypeName(typeof(ITestInterface).FullName + "_Clone")

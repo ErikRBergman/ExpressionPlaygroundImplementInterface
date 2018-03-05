@@ -229,7 +229,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
 
         private static GenerateProxyResult<ITestInterface> GetProxyTypeInformation()
         {
-            var parameters = TypeCloneBuilderParameters
+            var parameters = TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
                 .New
                 .AddInterface(typeof(ITestInterface))
                 .ParentType(typeof(ProxyBase<>).MakeGenericType(typeof(ITestInterface)))

@@ -6,62 +6,45 @@
 
     public static class TypeCloneBuilderParametersExtensions
     {
-        public static TypeCloneBuilderParameters OutputInterface(this TypeCloneBuilderParameters parameters)
-        {
-            return parameters
-                .TypeAttributes(System.Reflection.TypeAttributes.Interface | System.Reflection.TypeAttributes.Abstract | System.Reflection.TypeAttributes.Public)
-                .MethodAttributes(System.Reflection.MethodAttributes.Public | System.Reflection.MethodAttributes.Virtual | System.Reflection.MethodAttributes.HideBySig | System.Reflection.MethodAttributes.NewSlot | System.Reflection.MethodAttributes.Abstract);
-        }
-
-        public static TypeCloneBuilderParameters TypeAttributes(this TypeCloneBuilderParameters parameters, TypeAttributes typeAttributes)
-        {
-            parameters.TypeAttributes = typeAttributes;
-            return parameters;
-        }
-
-        public static TypeCloneBuilderParameters MethodAttributes(this TypeCloneBuilderParameters parameters, MethodAttributes methodAttributes)
-        {
-            parameters.MethodAttributes = methodAttributes;
-            return parameters;
-        }
-
-        public static TypeCloneBuilderParameters AddInterface(this TypeCloneBuilderParameters parameters, Type @interface)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, Type @interface)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
         {
             parameters.InterfacesToImplement = parameters.InterfacesToImplement.Add(@interface);
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters AddInterface<TType>(this TypeCloneBuilderParameters parameters)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext, TType>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
         {
             parameters.InterfacesToImplement = parameters.InterfacesToImplement.Add(typeof(TType));
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters ParentType(this TypeCloneBuilderParameters parameters, Type parentType)
-        {
-            parameters.ParentType = parentType;
-            return parameters;
-        }
-
-        public static TypeCloneBuilderParameters ClosureTypeNameSelectorFunc(this TypeCloneBuilderParameters parameters, Func<Type, MethodInfo, string, string> closureTypeNameSelector)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ClosureTypeNameSelectorFunc<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            Func<Type, MethodInfo, string, string> closureTypeNameSelector)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
         {
             parameters.ClosureTypeNameSelector = closureTypeNameSelector;
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters ImplementInterfacePredicateFunc(this TypeCloneBuilderParameters parameters, Func<Type, bool> predicate)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ImplementInterfacePredicateFunc<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            Func<Type, bool> predicate)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
         {
             parameters.ImplementInterfacePredicate = predicate;
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters TypeName(this TypeCloneBuilderParameters parameters, string typeName)
-        {
-            parameters.TypeName = typeName;
-            return parameters;
-        }
-
-        public static IsValidResult IsValid(this TypeCloneBuilderParameters parameters)
+        public static IsValidResult IsValid<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
         {
             var errors = new List<string>();
 
@@ -94,6 +77,53 @@
             return new IsValidResult(errors.Count == 0, errors);
         }
 
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> MethodAttributes<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            MethodAttributes methodAttributes)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.MethodAttributes = methodAttributes;
+            return parameters;
+        }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> OutputInterface<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            return parameters.TypeAttributes(System.Reflection.TypeAttributes.Interface | System.Reflection.TypeAttributes.Abstract | System.Reflection.TypeAttributes.Public)
+                .MethodAttributes(
+                    System.Reflection.MethodAttributes.Public
+                    | System.Reflection.MethodAttributes.Virtual
+                    | System.Reflection.MethodAttributes.HideBySig
+                    | System.Reflection.MethodAttributes.NewSlot
+                    | System.Reflection.MethodAttributes.Abstract);
+        }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ParentType<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, Type parentType)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.ParentType = parentType;
+            return parameters;
+        }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeAttributes<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, TypeAttributes typeAttributes)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.TypeAttributes = typeAttributes;
+            return parameters;
+        }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeName<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, string typeName)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.TypeName = typeName;
+            return parameters;
+        }
+
         public struct IsValidResult
         {
             public IsValidResult(bool isValid, IEnumerable<string> errors)
@@ -102,10 +132,9 @@
                 this.Errors = errors;
             }
 
-            public bool IsValid { get; }
-
             public IEnumerable<string> Errors { get; }
-        }
 
+            public bool IsValid { get; }
+        }
     }
 }

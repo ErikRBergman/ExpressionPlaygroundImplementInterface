@@ -14,7 +14,7 @@ namespace Serpent.InterfaceProxy
     using Serpent.InterfaceProxy.Validation;
 
     public class TypeCloneBuilder<TTypeContext, TMethodContext>
-        where TTypeContext : BaseTypeContext, new()
+        where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>, new()
         where TMethodContext : BaseMethodContext, new()
     {
         public TypeCloneBuilder()
@@ -23,8 +23,8 @@ namespace Serpent.InterfaceProxy
         }
 
         public ModuleBuilder ModuleBuilder { get; set; }
-        
-        public GenerateTypeResult GenerateType(TypeCloneBuilderParameters parameters)
+
+        public virtual GenerateTypeResult GenerateType(TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
         {
             var areParametersValid = parameters.IsValid();
             if (areParametersValid.IsValid == false)
@@ -52,12 +52,12 @@ namespace Serpent.InterfaceProxy
             var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces()).ToArray();
 
             var typeContext = new TTypeContext
-                                  {
-                                      TypeBuilder = typeBuilder,
-                                      Parameters = parameters
-                                  };
+            {
+                TypeBuilder = typeBuilder,
+                Parameters = parameters,
+            };
 
-            var createMethodsResult = this.CreateMethods(typeContext, interfaces, parentType);
+            var createMethodsResult = this.CreateMethods(typeBuilder, parameters, interfaces, parentType);
 
             // Generate the type
             var generatedType = typeBuilder.CreateTypeInfo();
@@ -93,22 +93,20 @@ namespace Serpent.InterfaceProxy
 
         private static MethodBuilder CreateMethod(
             TTypeContext typeContext,
-            MethodInfo sourceMethodInfo,
-            ParameterInfo[] sourceMethodParameters,
-            Type[] genericArguments,
-            string[] genericArgumentNames)
+            CreateMethodFuncResult<TMethodContext> createMethodContext)
         {
             var typeBuilder = typeContext.TypeBuilder;
 
-            Func<MethodInfo, Type, IEnumerable<TypeBuilderMethodParameter>, IEnumerable<TypeBuilderMethodParameter>> parameterFunc = typeContext.Parameters.MethodModifierFunc ?? ((MethodInfo m, Type t, IEnumerable<TypeBuilderMethodParameter> ps) => ps);
-
-            var newParameters = parameterFunc(sourceMethodInfo, sourceMethodInfo.ReturnType, sourceMethodParameters.Select(p => new TypeBuilderMethodParameter(p))).ToArray();
+            var sourceMethodInfo = createMethodContext.CreateMethodData.SourceMethodInfo;
 
             var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                 sourceMethodInfo.Name,
                 typeContext.Parameters.MethodAttributes,
                 sourceMethodInfo.ReturnType,
-                newParameters.Select(pi => pi.ParameterType).ToArray());
+                createMethodContext.CreateMethodData.Parameters.Select(pi => pi.ParameterType).ToArray());
+
+            var genericArguments = createMethodContext.CreateMethodData.GenericArguments;
+            var genericArgumentNames = createMethodContext.CreateMethodData.GenericArgumentNames;
 
             if (genericArguments.Any())
             {
@@ -122,7 +120,7 @@ namespace Serpent.InterfaceProxy
                 interfaceImplementationMethodBuilder.SetReturnType(newReturnType);
             }
 
-            UpdateParameterAttributes(interfaceImplementationMethodBuilder, newParameters);
+            UpdateParameterAttributes(interfaceImplementationMethodBuilder, createMethodContext.CreateMethodData.Parameters.ToArray());
 
             return interfaceImplementationMethodBuilder;
         }
@@ -148,7 +146,9 @@ namespace Serpent.InterfaceProxy
             return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
         }
 
-        private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
+        private static void UpdateParameterAttributes(
+            MethodBuilder interfaceImplementationMethodBuilder,
+            TypeBuilderMethodParameter[] parameters)
         {
             for (var i = 0; i < parameters.Length; i++)
             {
@@ -167,16 +167,6 @@ namespace Serpent.InterfaceProxy
                     builder.SetConstant(parameters[i].DefaultValue);
                 }
             }
-        }
-
-        protected virtual TMethodContext CreateMethodContext(
-            Type @interface,
-            TypeBuilder typeBuilder,
-            MethodInfo sourceMethodInfo,
-            ParameterInfo[] parameters,
-            Type[] genericArguments)
-        {
-            return default(TMethodContext);
         }
 
         private ImmutableList<string> CreateInterfaceMethods(
@@ -209,27 +199,48 @@ namespace Serpent.InterfaceProxy
                 {
                 }
 
-                var methodContext = this.CreateMethodContext(@interface, typeContext.TypeBuilder, sourceMethod, parameters, genericArguments);
+
+                var createMethodContextFunc = typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
+
+                var createMethodData = new CreateMethodData
+                                           {
+                                               SourceMethodInfo = sourceMethod,
+                                               TypeBuilder = typeContext.TypeBuilder,
+                                               SourceType = typeContext.SourceType,
+                                               GenericArguments = genericArguments,
+                                               GenericArgumentNames = genericArgumentNames,
+                                               Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
+                                           };
+
+                var createMethodContext = createMethodContextFunc(createMethodData, typeContext);
 
                 var interfaceImplementationMethodBuilder = CreateMethod(
                     typeContext,
-                    sourceMethod,
-                    parameters,
-                    genericArguments,
-                    genericArgumentNames);
+                    createMethodContext);
 
-                this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, methodContext, parentType);
+                this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, createMethodContext.MethodContext, parentType);
             }
 
             return usedNames;
         }
 
-        private ImplementInterfaceMethodResult CreateMethods(TTypeContext typeContext, IEnumerable<Type> interfaces, Type parentType)
+        private ImplementInterfaceMethodResult CreateMethods(
+            TypeBuilder typeBuilder,
+            TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            IEnumerable<Type> interfaces,
+            Type parentType)
         {
             var result = ImplementInterfaceMethodResult.Empty;
 
             foreach (var interfaceType in interfaces)
             {
+                var typeContext = new TTypeContext
+                {
+                    SourceType = interfaceType,
+                    TypeBuilder = typeBuilder,
+                    Parameters = parameters
+                };
+
                 result = result.AddUsedNames(
                     this.CreateInterfaceMethods(
                         typeContext,
@@ -251,7 +262,7 @@ namespace Serpent.InterfaceProxy
 
         }
 
-        public class TypeCloneBuilderTypeContext : BaseTypeContext
+        public class TypeCloneBuilderTypeContext : BaseTypeContext<TypeCloneBuilderTypeContext, TypeCloneBuilderMethodContext>
         {
 
         }

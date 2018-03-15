@@ -23,16 +23,6 @@
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ClosureTypeNameSelectorFunc<TTypeContext, TMethodContext>(
-            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
-            Func<Type, MethodInfo, string, string> closureTypeNameSelector)
-            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
-            where TMethodContext : BaseMethodContext
-        {
-            parameters.ClosureTypeNameSelector = closureTypeNameSelector;
-            return parameters;
-        }
-
         public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ImplementInterfacePredicateFunc<TTypeContext, TMethodContext>(
             this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
             Func<Type, bool> predicate)

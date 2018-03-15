@@ -11,8 +11,8 @@
     {
         public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> New => new TypeCloneBuilderParameters<TTypeContext, TMethodContext>();
 
-        public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; } = (@interface, methodInfo, @namespace) =>
-            @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
+        //public Func<Type, MethodInfo, string, string> ClosureTypeNameSelector { get; set; } = (@interface, methodInfo, @namespace) =>
+        //    @namespace + "." + @interface.Name + "." + methodInfo.Name + "_Closure_" + Guid.NewGuid().ToString("N");
 
         public Func<CreateMethodData, TTypeContext, CreateMethodFuncResult<TMethodContext>> CreateMethodFunc { get; set; }
 

@@ -35,7 +35,7 @@ namespace Serpent.InterfaceProxy
 
         private CreateMethodFuncResult<MethodContext> CreateMethodContextData(CreateMethodData methodData, TypeContext typeContext)
         {
-            var finalClosureType = GetFinalClosureType(methodData.SourceType, this.CreateClosureTypeFunc, methodData.SourceMethodInfo.GetParameters(), methodData.SourceMethodInfo, methodData.GenericArguments);
+            var finalClosureType = GetFinalClosureType(methodData.SourceType, this.CreateClosureTypeFunc, typeContext.Parameters.ModuleBuilder, methodData.SourceMethodInfo.GetParameters(), methodData.SourceMethodInfo, methodData.GenericArguments);
             var finalDelegateMethod = GetFinalDelegateMethod(methodData.TypeBuilder, methodData.SourceType, methodData.SourceMethodInfo, finalClosureType, methodData.GenericArguments);
 
             return
@@ -48,10 +48,10 @@ namespace Serpent.InterfaceProxy
                     });
         }
 
-        private TypeBuilder CreateClosureTypeFunc(Type interfaceType, MethodInfo method)
+        private TypeBuilder CreateClosureTypeFunc(Type interfaceType, ModuleBuilder moduleBuilder, MethodInfo method)
         {
             var closureTypeName = method.Name + "_closure_" + Guid.NewGuid().ToString("N"); // this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
-            return ClosureBuilder.CreateClosureTypeBuilder(this.ModuleBuilder, closureTypeName);
+            return ClosureBuilder.CreateClosureTypeBuilder(moduleBuilder, closureTypeName);
         }
 
         private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
@@ -63,7 +63,8 @@ namespace Serpent.InterfaceProxy
 
         private static Type GetFinalClosureType(
             Type @interface,
-            Func<Type, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            Func<Type, ModuleBuilder, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            ModuleBuilder moduleBuilder,
             ParameterInfo[] parameters,
             MethodInfo method,
             Type[] genericArguments)
@@ -72,7 +73,7 @@ namespace Serpent.InterfaceProxy
 
             if (parameters.Length > 0)
             {
-                var closureTypeBuilder = createClosureTypeFunc(@interface, method);
+                var closureTypeBuilder = createClosureTypeFunc(@interface, moduleBuilder, method);
                 closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
             }
 

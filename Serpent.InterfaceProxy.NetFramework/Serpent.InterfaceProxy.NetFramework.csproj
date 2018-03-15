@@ -48,6 +48,7 @@
     <Compile Include="BaseTypeContext.cs" />
     <Compile Include="CreateMethodData.cs" />
     <Compile Include="CreateMethodFuncResult.cs" />
+    <Compile Include="Extensions\TypeCloneBuilderExtension.cs" />
     <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
     <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
     <Compile Include="DefaultValues.cs" />
@@ -65,7 +66,7 @@
     <Compile Include="TypeBuilderMethodParameter.cs" />
     <Compile Include="TypeCloneBuilder.cs" />
     <Compile Include="TypeCloneBuilderParameters.cs" />
-    <Compile Include="TypeCloneBuilderParametersExtensions.cs" />
+    <Compile Include="Extensions\TypeCloneBuilderParametersExtensions.cs" />
     <Compile Include="Types\TypeSubstitutor.cs" />
     <Compile Include="Validation\Validator.cs" />
   </ItemGroup>

@@ -8,6 +8,7 @@ namespace ExpressionPlayground
 
     using Serpent.InterfaceProxy;
     using Serpent.InterfaceProxy.Extensions;
+    using Serpent.InterfaceProxy.NetFramework.Tests;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces;
     using Serpent.InterfaceProxy.Types;
@@ -28,9 +29,19 @@ namespace ExpressionPlayground
 
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>(typeof(ProxyBase<ITestInterface>));
 
+
+            var typeCloneBuilder = new TypeCloneBuilder<TypeCloneBuilder.TypeCloneBuilderTypeContext, TypeCloneBuilder.TypeCloneBuilderMethodContext>();
+            var generatedType = typeCloneBuilder.GenerateType(
+                parameters => parameters
+                    .OutputInterface()
+                    .AddInterface(typeof(ITestInterface))
+                    .TypeName(typeof(ITestInterface).FullName + "_Clone")
+                );
+
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 
             await Task.Yield();
+
            
             // Todo: Return the proxy method chosen
             // Todo: Change the closure classes into structs to prevent the extra heap allocation

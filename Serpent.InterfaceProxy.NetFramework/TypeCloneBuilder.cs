@@ -17,13 +17,6 @@ namespace Serpent.InterfaceProxy
         where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>, new()
         where TMethodContext : BaseMethodContext, new()
     {
-        public TypeCloneBuilder()
-        {
-            this.ModuleBuilder = DefaultValues.DefaultModuleBuilder;
-        }
-
-        public ModuleBuilder ModuleBuilder { get; set; }
-
         public virtual GenerateTypeResult GenerateType(TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
         {
             var areParametersValid = parameters.IsValid();
@@ -37,7 +30,7 @@ namespace Serpent.InterfaceProxy
             var typeName = parameters.TypeName;
 
             var newTypeAttributes = parameters.TypeAttributes;
-            var typeBuilder = this.DefineType(typeName, newTypeAttributes, parentType);
+            var typeBuilder = this.DefineType(parameters.ModuleBuilder, typeName, newTypeAttributes, parentType);
 
             foreach (var @interface in parameters.InterfacesToImplement)
             {
@@ -67,16 +60,16 @@ namespace Serpent.InterfaceProxy
             return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories);
         }
 
-        private TypeBuilder DefineType(string typeName, TypeAttributes newTypeAttributes, Type parentType)
+        private TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, TypeAttributes newTypeAttributes, Type parentType)
         {
             TypeBuilder typeBuilder;
             if (parentType != null)
             {
-                typeBuilder = this.ModuleBuilder.DefineType(typeName, newTypeAttributes, parentType);
+                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes, parentType);
             }
             else
             {
-                typeBuilder = this.ModuleBuilder.DefineType(typeName, newTypeAttributes);
+                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes);
             }
 
             return typeBuilder;

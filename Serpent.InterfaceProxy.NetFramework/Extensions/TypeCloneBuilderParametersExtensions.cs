@@ -1,8 +1,9 @@
-﻿namespace Serpent.InterfaceProxy
+﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
     using System.Collections.Generic;
     using System.Reflection;
+    using System.Reflection.Emit;
 
     public static class TypeCloneBuilderParametersExtensions
     {
@@ -123,6 +124,16 @@
             parameters.TypeName = typeName;
             return parameters;
         }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ModuleBuilder<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, ModuleBuilder moduleBuilder)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.ModuleBuilder = moduleBuilder;
+            return parameters;
+        }
+
+
 
         public struct IsValidResult
         {

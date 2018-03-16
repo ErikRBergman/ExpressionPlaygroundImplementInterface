@@ -40,15 +40,27 @@ namespace Serpent.IntermediateLanguageTools
 
             int tabCount = 1;
 
-            var labels = new HashSet<int>(
-                instructions
-                    .Where(i => i.Operand is Instruction)
-                    .Select(i => ((Instruction)i.Operand).Offset));
-
+            // Local variables
             builder.AppendLineTabbed(tabCount, "// The local variables");
             var localVariables = GetLocalVariables(instructions).OrderBy(variable => variable.LocalIndex);
-            builder.AppendLine(GetDefineLocalsText(localVariables, "generator", tabCount));
+            builder.Append(GetDefineLocalsText(localVariables, "generator", tabCount));
 
+            // add labels
+            var labels = instructions
+                .Where(i => i.Operand is Instruction)
+                .Select(i => ((Instruction)i.Operand).Offset).Distinct().OrderBy(i => i);
+
+            var labelSet = new HashSet<int>(labels);
+
+            builder.AppendLine();
+            builder.AppendLineTabbed(tabCount, "// Add labels");
+
+            foreach (var label in labels)
+            {
+                builder.AppendLineTabbed(tabCount, $"var label_{label:X2} = generator.DefineLabel();");
+            }
+
+            builder.AppendLine();
             builder.AppendLineTabbed(tabCount, "// The code");
 
             foreach (var instruction in instructions)
@@ -58,9 +70,9 @@ namespace Serpent.IntermediateLanguageTools
                     builder.AppendLineTabbed(tabCount, $"// {instruction}");
                 }
 
-                if (labels.Contains(instruction.Offset))
+                if (labelSet.Contains(instruction.Offset))
                 {
-                    builder.AppendLineTabbed(tabCount, $"var label_{instruction.Offset:X2} = generator.DefineLabel();");
+                    builder.AppendLineTabbed(tabCount, $"generator.MarkLabel(label_{instruction.Offset:X2});");
                 }
 
                 builder.AppendLineTabbed(tabCount, GetInstructionEmitText(instruction) + ";");
@@ -91,10 +103,10 @@ namespace Serpent.IntermediateLanguageTools
         {
             if (variable.IsPinned)
             {
-                return "DeclareLocal(typeof(" + variable.LocalType.FullName + "), true)";
+                return "DeclareLocal(typeof(" + variable.LocalType.GetCSharpName(true, true) + "), true)";
             }
 
-            return "DeclareLocal(typeof(" + variable.LocalType.FullName + "))";
+            return "DeclareLocal(typeof(" + variable.LocalType.GetCSharpName(true, true) + "))";
         }
 
         private static HashSet<LocalVariableInfo> GetLocalVariables(IEnumerable<Instruction> instructions)
@@ -121,30 +133,53 @@ namespace Serpent.IntermediateLanguageTools
             {
                 if (instruction.Operand is LocalVariableInfo localVariable)
                 {
-                    return result + ", local_" + localVariable.LocalIndex + ")";
+                    return $"{result}, local_{localVariable.LocalIndex})";
                 }
 
                 if (instruction.Operand is System.Reflection.TypeInfo typeInfo)
                 {
-                    return result + ", typeof(" + typeInfo.FullName + "))";
+                    return $"{result}, typeof({typeInfo.GetCSharpName(true, true)}))";
                 }
 
                 if (instruction.Operand is System.Reflection.MethodInfo methodInfo)
                 {
-                    return result + ")";
-                    //return result + ", typeof(" + methodInfo.FullName + "))";
+                    ////var method = methodInfo.DeclaringType.GetMethod(
+                    ////    methodInfo.Name,
+                    ////    BindingFlags.Public | BindingFlags.NonPublic,
+                    ////    null,
+                    ////    methodInfo.GetParameters().Select(p => p.ParameterType).ToArray(),
+                    ////    null);
+
+                    // TODO: Make it possible to reference a method not created yet, in a type not created yet
+
+                    var parameters = methodInfo.GetParameters();
+
+                    string parameterTypes;
+
+                    if (parameters.Length == 0)
+                    {
+                        parameterTypes = "System.Type.EmptyTypes";
+                    }
+                    else
+                    {
+                        parameterTypes = $"new[] {{ {string.Join(", ", parameters.Select(p => $"typeof({p.ParameterType.GetCSharpName(true, true)})"))} }}";
+                    }
+
+                    return $"{result}, typeof({methodInfo.DeclaringType.GetCSharpName(true, true)}).GetMethod(\"{methodInfo.Name}\", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, null, {parameterTypes}, null))";
                 }
 
                 if (instruction.Operand is System.Reflection.FieldInfo fieldInfo)
                 {
-                    return result + ")";
+                    // TODO: Make it possible to reference a field not created yet, in a type not created yet
+                    var field = fieldInfo.DeclaringType.GetField(fieldInfo.Name, BindingFlags.Public | BindingFlags.NonPublic);
+
+                    return $"{result}, typeof({fieldInfo.DeclaringType.GetCSharpName(true, true)}).GetField(\"{fieldInfo.Name}\", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))";
                     //return result + ", typeof(" + typeInfo.FullName + "))";
                 }
 
                 if (instruction.Operand is Mono.Reflection.Instruction labelInstruction)
                 {
                     return result + $", label_{labelInstruction.Offset:X2})";
-                    //return result + ", typeof(" + typeInfo.FullName + "))";
                 }
 
                 //throw new NotImplementedException("Can't generate parameter of: " + instruction.Operand);

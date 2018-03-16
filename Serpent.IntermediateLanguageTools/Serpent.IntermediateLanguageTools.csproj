@@ -46,6 +46,7 @@
     <Compile Include="CSharpIntermediateLanguageGenerator.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
     <Compile Include="Helpers\Tabs.cs" />
+    <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

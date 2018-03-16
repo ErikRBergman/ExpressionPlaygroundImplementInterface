@@ -1,4 +1,5 @@
 ﻿// ReSharper disable StyleCop.SA1402
+
 namespace Serpent.InterfaceProxy
 {
     using System;
@@ -11,7 +12,6 @@ namespace Serpent.InterfaceProxy
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.ImplementationBuilders;
     using Serpent.InterfaceProxy.Types;
-    using Serpent.InterfaceProxy.Validation;
 
     public class TypeCloneBuilder<TTypeContext, TMethodContext>
         where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>, new()
@@ -27,10 +27,7 @@ namespace Serpent.InterfaceProxy
 
             var parentType = parameters.ParentType;
 
-            var typeName = parameters.TypeName;
-
-            var newTypeAttributes = parameters.TypeAttributes;
-            var typeBuilder = this.DefineType(parameters.ModuleBuilder, typeName, newTypeAttributes, parentType);
+            var typeBuilder = this.DefineType(parameters.ModuleBuilder, parameters.TypeName, parameters.TypeAttributes, parentType);
 
             foreach (var @interface in parameters.InterfacesToImplement)
             {
@@ -44,12 +41,6 @@ namespace Serpent.InterfaceProxy
 
             var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces()).ToArray();
 
-            var typeContext = new TTypeContext
-            {
-                TypeBuilder = typeBuilder,
-                Parameters = parameters,
-            };
-
             var createMethodsResult = this.CreateMethods(typeBuilder, parameters, interfaces, parentType);
 
             // Generate the type
@@ -60,33 +51,11 @@ namespace Serpent.InterfaceProxy
             return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories);
         }
 
-        private TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, TypeAttributes newTypeAttributes, Type parentType)
-        {
-            TypeBuilder typeBuilder;
-            if (parentType != null)
-            {
-                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes, parentType);
-            }
-            else
-            {
-                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes);
-            }
-
-            return typeBuilder;
-        }
-
-        protected virtual void EmitMethodImplementation(
-            Type interfaceType,
-            MethodInfo sourceMethodInfo,
-            MethodBuilder methodBuilder,
-            TMethodContext context,
-            Type parentType)
+        protected virtual void EmitMethodImplementation(Type interfaceType, MethodInfo sourceMethodInfo, MethodBuilder methodBuilder, TMethodContext context, Type parentType)
         {
         }
 
-        private static MethodBuilder CreateMethod(
-            TTypeContext typeContext,
-            CreateMethodFuncResult<TMethodContext> createMethodContext)
+        private static MethodBuilder CreateMethod(TTypeContext typeContext, CreateMethodFuncResult<TMethodContext> createMethodContext)
         {
             var typeBuilder = typeContext.TypeBuilder;
 
@@ -139,9 +108,7 @@ namespace Serpent.InterfaceProxy
             return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
         }
 
-        private static void UpdateParameterAttributes(
-            MethodBuilder interfaceImplementationMethodBuilder,
-            TypeBuilderMethodParameter[] parameters)
+        private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
         {
             for (var i = 0; i < parameters.Length; i++)
             {
@@ -162,11 +129,7 @@ namespace Serpent.InterfaceProxy
             }
         }
 
-        private ImmutableList<string> CreateInterfaceMethods(
-            TTypeContext typeContext,
-            Type @interface,
-            ImmutableList<string> usedNames,
-            Type parentType)
+        private ImmutableList<string> CreateInterfaceMethods(TTypeContext typeContext, Type @interface, ImmutableList<string> usedNames, Type parentType)
         {
             foreach (var sourceMethod in @interface.GetMethods())
             {
@@ -192,8 +155,8 @@ namespace Serpent.InterfaceProxy
                 {
                 }
 
-
-                var createMethodContextFunc = typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
+                var createMethodContextFunc =
+                    typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
 
                 var createMethodData = new CreateMethodData
                                            {
@@ -207,9 +170,7 @@ namespace Serpent.InterfaceProxy
 
                 var createMethodContext = createMethodContextFunc(createMethodData, typeContext);
 
-                var interfaceImplementationMethodBuilder = CreateMethod(
-                    typeContext,
-                    createMethodContext);
+                var interfaceImplementationMethodBuilder = CreateMethod(typeContext, createMethodContext);
 
                 this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, createMethodContext.MethodContext, parentType);
             }
@@ -228,23 +189,33 @@ namespace Serpent.InterfaceProxy
             foreach (var interfaceType in interfaces)
             {
                 var typeContext = new TTypeContext
-                {
-                    SourceType = interfaceType,
-                    TypeBuilder = typeBuilder,
-                    Parameters = parameters
-                };
+                                      {
+                                          SourceType = interfaceType,
+                                          TypeBuilder = typeBuilder,
+                                          Parameters = parameters
+                                      };
 
-                result = result.AddUsedNames(
-                    this.CreateInterfaceMethods(
-                        typeContext,
-                        interfaceType,
-                        result.NamesUsed,
-                        parentType));
+                result = result.AddUsedNames(this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed, parentType));
 
                 result = result.AddImplementedInterface(interfaceType);
             }
 
             return result;
+        }
+
+        private TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, TypeAttributes newTypeAttributes, Type parentType)
+        {
+            TypeBuilder typeBuilder;
+            if (parentType != null)
+            {
+                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes, parentType);
+            }
+            else
+            {
+                typeBuilder = moduleBuilder.DefineType(typeName, newTypeAttributes);
+            }
+
+            return typeBuilder;
         }
     }
 
@@ -252,12 +223,10 @@ namespace Serpent.InterfaceProxy
     {
         public class TypeCloneBuilderMethodContext : BaseMethodContext
         {
-
         }
 
         public class TypeCloneBuilderTypeContext : BaseTypeContext<TypeCloneBuilderTypeContext, TypeCloneBuilderMethodContext>
         {
-
         }
     }
 }

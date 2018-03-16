@@ -9,9 +9,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.InterfaceProxy.NetF
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.InterfaceProxy.NetFramework.Tests", "Serpent.InterfaceProxy.NetFramework.Tests\Serpent.InterfaceProxy.NetFramework.Tests.csproj", "{B9A1157D-77B2-4ED7-8715-D7F6B91CE28C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceCloneAdd", "InterfaceCloneAdd\InterfaceCloneAdd.csproj", "{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InterfaceCloneAdd", "InterfaceCloneAdd\InterfaceCloneAdd.csproj", "{321F6EFB-7ACB-4BDE-9721-CB67A5E95D71}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InterfaceCloneAndAddWithDebug", "InterfaceCloneAndAddWithDebug\InterfaceCloneAndAddWithDebug.csproj", "{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.IntermediateLanguageTools", "Serpent.IntermediateLanguageTools\Serpent.IntermediateLanguageTools.csproj", "{8393BC68-F6B0-41D4-A01B-D41A2F94F8BA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.IntermediateLanguageTools.Tests", "Serpent.IntermediateLanguageTools.Tests\Serpent.IntermediateLanguageTools.Tests.csproj", "{705CBD0B-61E6-4A55-BD31-7A1EAB92732E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serpent.IntermediateLanguageTools.Console", "Serpent.IntermediateLanguageTools.Console\Serpent.IntermediateLanguageTools.Console.csproj", "{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +45,18 @@ Global
 		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48BC5720-F03C-4D90-8DB6-C548EB1B1A5A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8393BC68-F6B0-41D4-A01B-D41A2F94F8BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8393BC68-F6B0-41D4-A01B-D41A2F94F8BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8393BC68-F6B0-41D4-A01B-D41A2F94F8BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8393BC68-F6B0-41D4-A01B-D41A2F94F8BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{705CBD0B-61E6-4A55-BD31-7A1EAB92732E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{705CBD0B-61E6-4A55-BD31-7A1EAB92732E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{705CBD0B-61E6-4A55-BD31-7A1EAB92732E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{705CBD0B-61E6-4A55-BD31-7A1EAB92732E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

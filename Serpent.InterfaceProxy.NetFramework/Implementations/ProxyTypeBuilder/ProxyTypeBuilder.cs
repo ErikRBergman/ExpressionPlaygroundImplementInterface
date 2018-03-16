@@ -33,59 +33,7 @@ namespace Serpent.InterfaceProxy
             return base.GenerateType(parameters);
         }
 
-        private CreateMethodFuncResult<MethodContext> CreateMethodContextData(CreateMethodData methodData, TypeContext typeContext)
-        {
-            var finalClosureType = GetFinalClosureType(methodData.SourceType, this.CreateClosureTypeFunc, typeContext.Parameters.ModuleBuilder, methodData.SourceMethodInfo.GetParameters(), methodData.SourceMethodInfo, methodData.GenericArguments);
-            var finalDelegateMethod = GetFinalDelegateMethod(methodData.TypeBuilder, methodData.SourceType, methodData.SourceMethodInfo, finalClosureType, methodData.GenericArguments);
-
-            return
-                new CreateMethodFuncResult<MethodContext>(
-                    methodData,
-                    new MethodContext
-                    {
-                        ClosureFinalType = finalClosureType,
-                        FinalDelegateMethodInfo = finalDelegateMethod
-                    });
-        }
-
-        private TypeBuilder CreateClosureTypeFunc(Type interfaceType, ModuleBuilder moduleBuilder, MethodInfo method)
-        {
-            var closureTypeName = method.Name + "_closure_" + Guid.NewGuid().ToString("N"); // this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
-            return ClosureBuilder.CreateClosureTypeBuilder(moduleBuilder, closureTypeName);
-        }
-
-        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
-        {
-            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
-            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
-            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
-        }
-
-        private static Type GetFinalClosureType(
-            Type @interface,
-            Func<Type, ModuleBuilder, MethodInfo, TypeBuilder> createClosureTypeFunc,
-            ModuleBuilder moduleBuilder,
-            ParameterInfo[] parameters,
-            MethodInfo method,
-            Type[] genericArguments)
-        {
-            Type closureFinalType = null;
-
-            if (parameters.Length > 0)
-            {
-                var closureTypeBuilder = createClosureTypeFunc(@interface, moduleBuilder, method);
-                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
-            }
-
-            return closureFinalType;
-        }
-
-        protected override void EmitMethodImplementation(
-            Type interfaceType,
-            MethodInfo sourceMethodInfo,
-            MethodBuilder methodBuilder,
-            MethodContext context,
-            Type parentType)
+        protected override void EmitMethodImplementation(Type interfaceType, MethodInfo sourceMethodInfo, MethodBuilder methodBuilder, MethodContext context, Type parentType)
         {
             var closureFinalType = context.ClosureFinalType;
 
@@ -181,6 +129,32 @@ namespace Serpent.InterfaceProxy
             return delegateType;
         }
 
+        private static Type GetFinalClosureType(
+            Type @interface,
+            Func<Type, ModuleBuilder, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            ModuleBuilder moduleBuilder,
+            ParameterInfo[] parameters,
+            MethodInfo method,
+            Type[] genericArguments)
+        {
+            Type closureFinalType = null;
+
+            if (parameters.Length > 0)
+            {
+                var closureTypeBuilder = createClosureTypeFunc(@interface, moduleBuilder, method);
+                closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
+            }
+
+            return closureFinalType;
+        }
+
+        private static MethodInfo GetFinalDelegateMethod(TypeBuilder typeBuilder, Type @interface, MethodInfo method, Type closureFinalType, Type[] genericArguments)
+        {
+            var delegateMethodName = method.Name + "_delegate_" + Guid.NewGuid().ToString("N");
+            var delegateMethodBuilder = DelegateBuilder.CreateDelegateMethod(delegateMethodName, typeBuilder, method, closureFinalType, @interface);
+            return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
+        }
+
         private static MethodInfo GetProxyMethod(
             Type closureFinalType,
             Type parentType,
@@ -232,6 +206,37 @@ namespace Serpent.InterfaceProxy
             return executeAsync;
         }
 
+        private TypeBuilder CreateClosureTypeFunc(Type interfaceType, ModuleBuilder moduleBuilder, MethodInfo method)
+        {
+            var closureTypeName = method.Name + "_closure_" + Guid.NewGuid().ToString("N"); // this.ClosureTypeNameSelector(@interfaceType, method, this.Namespace);
+            return ClosureBuilder.CreateClosureTypeBuilder(moduleBuilder, closureTypeName);
+        }
+
+        private CreateMethodFuncResult<MethodContext> CreateMethodContextData(CreateMethodData methodData, TypeContext typeContext)
+        {
+            var finalClosureType = GetFinalClosureType(
+                methodData.SourceType,
+                this.CreateClosureTypeFunc,
+                typeContext.Parameters.ModuleBuilder,
+                methodData.SourceMethodInfo.GetParameters(),
+                methodData.SourceMethodInfo,
+                methodData.GenericArguments);
+            var finalDelegateMethod = GetFinalDelegateMethod(
+                methodData.TypeBuilder,
+                methodData.SourceType,
+                methodData.SourceMethodInfo,
+                finalClosureType,
+                methodData.GenericArguments);
+
+            return new CreateMethodFuncResult<MethodContext>(
+                methodData,
+                new MethodContext
+                    {
+                        ClosureFinalType = finalClosureType,
+                        FinalDelegateMethodInfo = finalDelegateMethod
+                    });
+        }
+
         public class MethodContext : BaseMethodContext
         {
             public Type ClosureFinalType { get; set; }
@@ -242,7 +247,5 @@ namespace Serpent.InterfaceProxy
         public class TypeContext : BaseTypeContext<TypeContext, MethodContext>
         {
         }
-
-
     }
 }

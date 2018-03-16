@@ -4,6 +4,7 @@ namespace ExpressionPlayground
 {
     using System;
     using System.Collections.Generic;
+    using System.Reflection;
     using System.Threading.Tasks;
 
     using Serpent.InterfaceProxy;
@@ -29,14 +30,12 @@ namespace ExpressionPlayground
 
             var proxyTypeInformation = proxyTypeBuilder.GenerateProxy<ITestInterface>(typeof(ProxyBase<ITestInterface>));
 
-
             var typeCloneBuilder = new TypeCloneBuilder<TypeCloneBuilder.TypeCloneBuilderTypeContext, TypeCloneBuilder.TypeCloneBuilderMethodContext>();
             var generatedType = typeCloneBuilder.GenerateType(
                 parameters => parameters
                     .OutputInterface()
                     .AddInterface(typeof(ITestInterface))
-                    .TypeName(typeof(ITestInterface).FullName + "_Clone")
-                );
+                    .TypeName(typeof(ITestInterface).FullName + "_Clone"));
 
             DefaultValues.DefaultAssemblyBuilder.Save(DefaultValues.DefaultAssemblyBuilder.GetName().Name + ".dll");
 

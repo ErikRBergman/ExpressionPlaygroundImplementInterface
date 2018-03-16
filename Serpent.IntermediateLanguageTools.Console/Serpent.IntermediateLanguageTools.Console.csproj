@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3A95DE7D-3B01-4EA9-B1BD-CD3EF76C49AB}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Serpent.InterfaceProxy</RootNamespace>
-    <AssemblyName>Serpent.InterfaceProxy.NetFramework</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <ProjectGuid>{D25AADED-26FD-4F6B-9DE8-E1D1F65C8B29}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Serpent.IntermediateLanguageTools.Console</RootNamespace>
+    <AssemblyName>Serpent.IntermediateLanguageTools.Console</AssemblyName>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -34,7 +36,6 @@
     <Reference Include="System.Collections.Immutable, Version=1.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Collections.Immutable.1.2.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
     </Reference>
-    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -44,35 +45,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseMethodContext.cs" />
-    <Compile Include="BaseTypeContext.cs" />
-    <Compile Include="CreateMethodData.cs" />
-    <Compile Include="CreateMethodFuncResult.cs" />
-    <Compile Include="Extensions\TypeCloneBuilderExtension.cs" />
-    <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
-    <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
-    <Compile Include="DefaultValues.cs" />
-    <Compile Include="ImplementationBuilders\DelegateBuilder.cs" />
-    <Compile Include="DynamicImplementInterfaceResultExtensions.cs" />
-    <Compile Include="Extensions\DictionaryExtensions.cs" />
-    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
-    <Compile Include="Extensions\MethodInfoExtensions.cs" />
-    <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
-    <Compile Include="Extensions\TypeExtensions.cs" />
-    <Compile Include="GenerateTypeResult.cs" />
-    <Compile Include="ImplementInterfaceMethodResult.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Implementations\ModifiedProxyTypeBuilder\ModifiedProxyTypeBuilder.cs" />
-    <Compile Include="Implementations\ProxyTypeBuilder\ProxyTypeBuilder.cs" />
-    <Compile Include="Core\TypeBuilderMethodParameter.cs" />
-    <Compile Include="Core\TypeCloneBuilder.cs" />
-    <Compile Include="Core\TypeCloneBuilderParameters.cs" />
-    <Compile Include="Extensions\TypeCloneBuilderParametersExtensions.cs" />
-    <Compile Include="Types\TypeSubstitutor.cs" />
-    <Compile Include="Validation\Validator.cs" />
+    <Compile Include="Test\FGCallContext\CallContext.cs" />
+    <Compile Include="Test\FGCallContext\CallContextExtensions.cs" />
+    <Compile Include="Test\FGCallContext\CallContextSpecificPropertiesExtensions.cs" />
+    <Compile Include="Test\FGCallContext\Constants.cs" />
+    <Compile Include="Test\InsertedCorrelationData.cs" />
+    <Compile Include="Test\IStatelessService1.cs" />
+    <Compile Include="Test\RequestDataModel.cs" />
+    <Compile Include="Test\ReturnDataModel.cs" />
+    <Compile Include="Test\Experiments.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Serpent.IntermediateLanguageTools\Serpent.IntermediateLanguageTools.csproj">
+      <Project>{8393bc68-f6b0-41d4-a01b-d41a2f94f8ba}</Project>
+      <Name>Serpent.IntermediateLanguageTools</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

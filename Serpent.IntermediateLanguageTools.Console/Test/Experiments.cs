@@ -10,6 +10,7 @@
     public class Experiments : IStatelessService1
     {
         private readonly IStatelessService1Clone inner;
+        private readonly int variable = 0;
 
         public Experiments(IStatelessService1Clone inner)
         {
@@ -18,6 +19,8 @@
 
         public Task<ReturnDataModel> DoItAsync(RequestDataModel request, string text)
         {
+            var iid = this.variable;
+
             var correlationData = new InsertedCorrelationData
                                       {
                                           CorrelationId = FG.CallContext.CallContext.Current.CorrelationId()

@@ -43,13 +43,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants\InstructionTexts.cs" />
     <Compile Include="CreateMethodILGeneratorParameters.cs" />
     <Compile Include="CSharpIntermediateLanguageGenerator.cs" />
     <Compile Include="Helpers\StringBuilderExtensions.cs" />
     <Compile Include="Helpers\Tabs.cs" />
     <Compile Include="Helpers\TypeExtensions.cs" />
     <Compile Include="Models\DotNetType.cs" />
+    <Compile Include="Constants\OpCodeValues.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Helpers\StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

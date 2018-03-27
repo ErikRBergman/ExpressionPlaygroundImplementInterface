@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -11,11 +10,23 @@
 
     using Mono.Reflection;
 
+    using Serpent.IntermediateLanguageTools.Constants;
     using Serpent.IntermediateLanguageTools.Helpers;
     using Serpent.IntermediateLanguageTools.Models;
 
     public class CSharpIntermediateLanguageGenerator
     {
+        private static readonly Dictionary<string, string> opcodeNames;
+
+        static CSharpIntermediateLanguageGenerator()
+        {
+            opcodeNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var name in typeof(OpCodes).GetFields().Select(f => f.Name))
+            {
+                opcodeNames.Add(name, name);
+            }
+        }
+
         public string CreateMethodILGenerator(CreateMethodILGeneratorParameters createMethodIlGeneratorParameters)
         {
             var instructions = createMethodIlGeneratorParameters.Method.GetInstructions();
@@ -31,7 +42,9 @@
 
             // Local variables
             builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, "// The local variables");
-            var localVariables = GetLocalVariables(instructions).OrderBy(variable => variable.LocalIndex);
+
+            var body = createMethodIlGeneratorParameters.Method.GetMethodBody();
+            var localVariables = body.LocalVariables.OrderBy(lv => lv.LocalIndex).ToArray();
             builder.Append(GetDefineLocalsText(localVariables, "generator", createMethodIlGeneratorParameters.TabCount));
 
             // add labels
@@ -54,7 +67,7 @@
             {
                 if (createMethodIlGeneratorParameters.Verbose)
                 {
-                    builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, $"// {instruction}");
+                    builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, $"// {GetInstructionVerboseText(instruction, localVariables)}");
                 }
 
                 if (labelSet.Contains(instruction.Offset))
@@ -62,7 +75,7 @@
                     builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, $"generator.MarkLabel(label_{instruction.Offset:X2});");
                 }
 
-                builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, GetInstructionEmitText(instruction, createMethodIlGeneratorParameters.DotNetType) + ";");
+                builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, GetInstructionEmitText(instruction, createMethodIlGeneratorParameters.DotNetType.SourceType) + ";");
 
                 if (createMethodIlGeneratorParameters.Verbose)
                 {
@@ -74,6 +87,44 @@
 
             builder.AppendLineTabbed(createMethodIlGeneratorParameters.TabCount, "}");
             return builder.ToString();
+        }
+
+        private static string GetInstructionVerboseText(Instruction instruction, LocalVariableInfo[] locals, bool isStatic = false)
+        {
+            int opcodeValue = (int)instruction.OpCode.Value;
+            string opcodeNetName = instruction.OpCode.Name.Replace(".", "_");
+            string opcodeDescription = InstructionTexts.Texts[opcodeNetName];
+
+            if (instruction.OpCode == OpCodes.Ldarg_0)
+            {
+                return instruction.ToString() + " - " + opcodeDescription + " Should be \"this.\" in c#";
+            }
+
+            if (opcodeValue >= (int)OpCodeValues.Ldloc_0 && opcodeValue <= (int)OpCodeValues.Ldloc_3)
+            {
+                var variableNumber = opcodeValue - (int)OpCodeValues.Ldloc_0;
+                return instruction.OpCode.Name + $" {locals[variableNumber].LocalType} ({variableNumber}) - " + opcodeDescription;
+            }
+
+            if (instruction.OpCode == OpCodes.Ldloc)
+            {
+                var variableNumber = ((LocalVariableInfo)instruction.Operand).LocalIndex;
+                return instruction.OpCode.Name + $" {locals[variableNumber].LocalType} ({variableNumber}) - " + opcodeDescription;
+            }
+
+            if (opcodeValue >= (int)OpCodeValues.Stloc_0 && opcodeValue <= (int)OpCodeValues.Stloc_3)
+            {
+                var variableNumber = opcodeValue - (int)OpCodeValues.Stloc_0;
+                return instruction.OpCode.Name + $" {locals[variableNumber].LocalType} ({variableNumber}) - " + opcodeDescription;
+            }
+
+            if (instruction.OpCode == OpCodes.Stloc || instruction.OpCode == OpCodes.Stloc_S)
+            {
+                var variableNumber = ((LocalVariableInfo)instruction.Operand).LocalIndex;
+                return instruction.OpCode.Name + $" {locals[variableNumber].LocalType} ({variableNumber}) - " + opcodeDescription;
+            }
+
+            return instruction.ToString() + " - " + opcodeDescription;
         }
 
         private static string GetDefineLocalsText(IEnumerable<LocalVariableInfo> localVariables, string generatorName, int tabCount = 0)
@@ -164,10 +215,25 @@
                     return result + $", label_{labelInstruction.Offset:X2})";
                 }
 
+                if (instruction.Operand is sbyte || instruction.Operand is short || instruction.Operand is int ||
+                        instruction.Operand is byte || instruction.Operand is ushort || instruction.Operand is uint ||
+                        instruction.Operand is long || instruction.Operand is ulong || instruction.Operand is float ||
+                    instruction.Operand is double || instruction.Operand is decimal)
+                {
+                    return result + $", {instruction.Operand})";
+                }
+
+                if (instruction.Operand is string stringOperand)
+                {
+                    stringOperand = "\"" + stringOperand.Replace("\"", "\"\"") + "\"";
+                    return result + $", {stringOperand})";
+                }
+
+
                 var operandType = instruction.Operand?.GetType();
 
                 Debug.WriteLine("unknown operand type: " + operandType.FullName);
-                throw new NotImplementedException("Can't generate parameter of: " + instruction.Operand);
+                throw new NotImplementedException("Can't generate parameter of: " + operandType.FullName + ", value: " + instruction.Operand);
 
                 return result + ")";
             }
@@ -175,121 +241,15 @@
             return result + ")";
         }
 
-        private static HashSet<LocalVariableInfo> GetLocalVariables(IEnumerable<Instruction> instructions)
-        {
-            var variables = new HashSet<LocalVariableInfo>();
-
-            foreach (var instruction in instructions)
-            {
-                if (instruction.Operand is LocalVariableInfo localVariableInfo)
-                {
-                    variables.Add(localVariableInfo);
-                }
-            }
-
-            return variables;
-        }
-
         private static string GetOpCodeText(OpCode opCode)
         {
-            return opCode.Name.ToUpperFirst().Replace(".", "_").ToUpperFirstAfterFirstInstance('_');
-
-            // switch (opCode.Name)
-            // {
-            // case "nop":
-            // return "Nop";
-            // case "ldloca.s":
-            // return "Ldloca_s";
-            // case "initobj":
-            // return "Initobj";
-            // default:
-            // throw new NotImplementedException(opCode.ToString());
-            // }
+            return opcodeNames[opCode.Name.Replace(".", "_")];
+            // return opCode.Name.ToUpperFirst().Replace(".", "_").ToUpperFirstAfterFirstInstance('_');
         }
 
         private struct MethodContext
         {
             public HashSet<LocalVariableInfo> LocalVariables { get; set; }
-        }
-    }
-
-    public static class StringExtensions
-    {
-        public static string ToUpperFirst(this string text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return text;
-            }
-
-            if (text.Length == 1)
-            {
-                return text.ToUpper();
-            }
-
-            return text.Substring(0, 1).ToUpper() + text.Substring(1);
-        }
-
-        public static string ToUpperFirst(this string text, CultureInfo culture)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return text;
-            }
-
-            if (text.Length == 1)
-            {
-                return text.ToUpper(culture);
-            }
-
-            return text.Substring(0, 1).ToUpper(culture) + text.Substring(1);
-        }
-
-        public static string ToUpperFirstAfter(this string text, int startIndex)
-        {
-            if (string.IsNullOrWhiteSpace(text) || startIndex >= text.Length)
-            {
-                return text;
-            }
-
-            return text.Substring(0, startIndex) + text.Substring(startIndex, 1).ToUpper() + (text.Length <= startIndex + 1 ? string.Empty : text.Substring(startIndex + 1));
-        }
-
-        public static string ToUpperFirstAfter(this string text, int startIndex, CultureInfo culture)
-        {
-            if (string.IsNullOrWhiteSpace(text) || startIndex >= text.Length)
-            {
-                return text;
-            }
-
-            if (text.Length == 1)
-            {
-                return text.ToUpper(culture);
-            }
-
-            return text.Substring(0, startIndex) + text.Substring(startIndex, 1).ToUpper(culture) + (text.Length <= startIndex + 1 ? string.Empty : text.Substring(startIndex + 1));
-        }
-
-        public static string ToUpperFirstAfterFirstInstance(this string text, char firstInstance, CultureInfo culture)
-        {
-            var index = text.IndexOf(firstInstance);
-            if (index == -1)
-            {
-                return text;
-            }
-
-            return text.ToUpperFirstAfter(index + 1, culture);
-        }
-
-        public static string ToUpperFirstAfterFirstInstance(this string text, char firstInstance)
-        {
-            var index = text.IndexOf(firstInstance);
-            if (index == -1)
-            {
-                return text;
-            }
-
-            return text.ToUpperFirstAfter(index + 1);
         }
     }
 }

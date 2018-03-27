@@ -43,7 +43,8 @@ namespace Serpent.IntermediateLanguageTools.Console
                 sourceType.FieldNames.Add(field.Name);
             }
 
-
+            //var parameters = new CreateMethodILGeneratorParameters(typeof(Experiments).GetMethod("LotsAndLots"))
+            //var parameters = new CreateMethodILGeneratorParameters(typeof(Experiments).GetMethod("DoItStatic"))
 
             var parameters = new CreateMethodILGeneratorParameters(typeof(Experiments).GetMethod("DoItAsync"))
             {

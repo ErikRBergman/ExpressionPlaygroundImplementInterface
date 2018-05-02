@@ -7,6 +7,20 @@ using InterfaceCloneAndAddWithDebug.Interfaces;
 
 namespace InterfaceCloneAndAddWithDebug
 {
+
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = false)]
+    public class MyAttribute : Attribute
+    {
+        public String s;
+        public int x;
+
+        public MyAttribute(String s, int x)
+        {
+            this.s = s;
+            this.x = x;
+        }
+    }
+
     internal class Program
     {
         private static void Main(string[] args)
@@ -16,7 +30,7 @@ namespace InterfaceCloneAndAddWithDebug
 
             Console.WriteLine("Generating interface clones for:");
 
-            var assemblyName = type.FullName + "_interface_clone";
+            var assemblyName = "_______serpent_type_clone_" + type.Assembly.GetName().Name + "_______serpent_type_clone_c52eae52-af5f-4643-9ed7-39dfd2523201";
             var moduleName = assemblyName;
             var saveOnDisk = true;
 
@@ -39,6 +53,13 @@ namespace InterfaceCloneAndAddWithDebug
 #else
             assemblyBuilder.DefineDynamicModule(moduleName);
 #endif
+
+            var infoConstructor = typeof(MyAttribute).GetConstructor(new Type[2] { typeof(string), typeof(int) });
+            CustomAttributeBuilder attributeBuilder =
+                new CustomAttributeBuilder(infoConstructor, new object[2] { "Hello", 2 });
+            assemblyBuilder.SetCustomAttribute(attributeBuilder);
+
+
             var oldTypeToNewTypeMap = new Dictionary<Type, Type>();
 
             foreach (var @interface in interfaces.Reverse())

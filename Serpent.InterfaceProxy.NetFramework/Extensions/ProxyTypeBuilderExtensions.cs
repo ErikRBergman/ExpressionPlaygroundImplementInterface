@@ -19,9 +19,10 @@
 
             var generatedType = proxyTypeBuilder.GenerateType(parameters);
 
-            return new GenerateProxyResult<TInterfaceType>(generatedType.GeneratedType, generatedType.InterfacesImplemented, (Func<TInterfaceType, TInterfaceType>)generatedType.Factories.FirstOrDefault(f => f is Func<TInterfaceType, TInterfaceType>));
+            return new GenerateProxyResult<TInterfaceType>(
+                generatedType.GeneratedType, 
+                generatedType.InterfacesImplemented,
+                (Func<TInterfaceType, TInterfaceType>)generatedType.Factories.GetValueOrDefault(typeof(TInterfaceType), null));
         }
-
-
     }
 }

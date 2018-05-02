@@ -243,7 +243,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             return new GenerateProxyResult<ITestInterface>(
                 generatedType.GeneratedType,
                 generatedType.InterfacesImplemented,
-                (Func<ITestInterface, ITestInterface>)generatedType.Factories.FirstOrDefault(f => f is Func<ITestInterface, ITestInterface>));
+                (Func<ITestInterface, ITestInterface>)generatedType.Factories.GetValueOrDefault(typeof(ITestInterface), null));
         }
 
         public struct GenericStruct<T>

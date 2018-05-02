@@ -29,26 +29,40 @@ namespace Serpent.InterfaceProxy
 
             var typeBuilder = this.DefineType(parameters.ModuleBuilder, parameters.TypeName, parameters.TypeAttributes, parentType);
 
+            // Invoke event
+            parameters.OnTypeBuilderCreatedAction?.Invoke(typeBuilder);
+
+            // Add interfaces to implement
             foreach (var @interface in parameters.InterfacesToImplement)
             {
                 typeBuilder.AddInterfaceImplementation(@interface);
             }
 
+            // Create default constructors
             if (parentType != null)
             {
                 DefaultConstructorGenerator.CreateDefaultConstructors(typeBuilder, parentType);
             }
 
-            var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces()).ToArray();
+            // Get all unique interfaces to implement
+            var interfaces = parameters.InterfacesToImplement.SelectMany(type => type.GetAllInterfaces()).Distinct().ToArray();
 
+            // Invoke event
+            parameters.OnTypeBuilderCreatedAndConfiguredAction?.Invoke(typeBuilder);
+
+            // Create methods
             var createMethodsResult = this.CreateMethods(typeBuilder, parameters, interfaces, parentType);
 
-            // Generate the type
+            // Invoke event
+            parameters.OnBeforeTypeIsFinalizedAction?.Invoke(typeBuilder);
+
+            // Generate the new type
             var generatedType = typeBuilder.CreateTypeInfo();
 
-            var factories = interfaces.Select(i => GenerateFactoryDelegate(i, generatedType));
+            // Create a factory for each interface
+            var factories = interfaces.Select(i => new KeyValuePair<Type, Delegate>(i, GenerateFactoryDelegate(i, generatedType)));
 
-            return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories);
+            return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
         }
 
         protected virtual void EmitMethodImplementation(Type interfaceType, MethodInfo sourceMethodInfo, MethodBuilder methodBuilder, TMethodContext context, Type parentType)

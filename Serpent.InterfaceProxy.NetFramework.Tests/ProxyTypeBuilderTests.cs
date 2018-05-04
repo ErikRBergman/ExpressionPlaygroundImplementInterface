@@ -11,6 +11,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Serpent.InterfaceProxy.Extensions;
+    using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test.Implementation;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces;

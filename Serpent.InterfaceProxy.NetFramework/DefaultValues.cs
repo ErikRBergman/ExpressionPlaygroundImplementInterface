@@ -3,6 +3,8 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+    using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
+
     public static class DefaultValues
     {
         static DefaultValues()

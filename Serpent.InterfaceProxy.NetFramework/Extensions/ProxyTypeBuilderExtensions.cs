@@ -6,6 +6,7 @@
     using System.Reflection.Emit;
 
     using Serpent.InterfaceProxy;
+    using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
 
     public static class ProxyTypeBuilderExtensions
     {

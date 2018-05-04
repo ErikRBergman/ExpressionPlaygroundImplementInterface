@@ -6,11 +6,14 @@
 
     using InterfaceCloneAndAddWithDebug.Interfaces;
 
+    using Serpent.InterfaceProxy.Extensions;
+
     public static class TypeExtensions
     {
         public static IEnumerable<Type> GetActorInterfaces(this Type type)
         {
-            return type.GetInterfaces().Where(i => typeof(IActor).IsAssignableFrom(i) && i.GetInterfaces().Contains(typeof(IActor)));
+            // EB REVIEW: Doesnt both conditions produce the same result?
+            return type.GetInterfaces().Where(i => i.Is<IActor>() && i.GetInterfaces().Contains(typeof(IActor)));
         }
 
         public static IEnumerable<Type> GetActorInterfaces(this Type type, bool includeMe)

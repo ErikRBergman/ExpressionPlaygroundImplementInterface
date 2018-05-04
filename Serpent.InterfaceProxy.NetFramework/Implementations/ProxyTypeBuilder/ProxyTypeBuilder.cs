@@ -1,10 +1,9 @@
 ﻿// ReSharper disable StyleCop.SA1402
 // ReSharper disable ParameterHidesMember
 
-namespace Serpent.InterfaceProxy
+namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
@@ -16,12 +15,6 @@ namespace Serpent.InterfaceProxy
 
     public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
     {
-        public static IEnumerable<MethodInfo> GetExecuteAsyncMethods(Type parentType)
-        {
-            return parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(method => method.Name == "ExecuteAsync" || method.Name == "Execute");
-        }
-
         public override GenerateTypeResult GenerateType(TypeCloneBuilderParameters<TypeContext, MethodContext> parameters)
         {
             if (parameters == null)
@@ -42,7 +35,7 @@ namespace Serpent.InterfaceProxy
 
             var hasParameters = parameters.Length != 0;
 
-            var isAsyncMethod = typeof(Task).IsAssignableFrom(sourceMethodInfo.ReturnType);
+            var isAsyncMethod = sourceMethodInfo.ReturnType.Is<Task>();
 
             var returnValueGenericArguments = sourceMethodInfo.ReturnType.GenericTypeArguments;
             var hasGenericReturnValueArguments = returnValueGenericArguments.Length != 0;
@@ -59,42 +52,65 @@ namespace Serpent.InterfaceProxy
                 returnType = sourceMethodInfo.ReturnType.GenericTypeArguments[0];
             }
 
+#if DEBUG
+            var methodName = sourceMethodInfo.Name;
+            var _debug_test_ = methodName;
+#endif
+
+
+            var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod);
+
+            var proxyMethodParameters = proxyMethod.GetProxyMethodParameters();
+
             // Start of call to the proxy method (being called in the end of this method). Moved ldarg_0 here to optimize
             generator.Emit(OpCodes.Ldarg_0); // this (from the current method)
 
-            // only emit instantiating the closure if it's needed
-            if (hasParameters)
+            foreach (var parameter in proxyMethodParameters)
             {
-                var closureConstructor = closureFinalType.GetConstructors().Single();
 
-                generator.Emit(OpCodes.Newobj, closureConstructor);
-
-                // Populate the closure
-                var closureFields = closureFinalType.GetFields();
-
-                var parameterCount = parameters.Length;
-                for (var i = 0; i < parameterCount; i++)
+                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure)
                 {
-                    generator.Emit(OpCodes.Dup);
+                    // only emit instantiating the closure if it's needed
+                    if (hasParameters)
+                    {
+                        var closureConstructor = closureFinalType.GetConstructors().Single();
 
-                    generator.LdArg(i + 1);
+                        generator.Emit(OpCodes.Newobj, closureConstructor);
 
-                    generator.Emit(OpCodes.Stfld, closureFields[i]);
+                        // Populate the closure
+                        var closureFields = closureFinalType.GetFields();
+
+                        var parameterCount = parameters.Length;
+                        for (var i = 0; i < parameterCount; i++)
+                        {
+                            generator.Emit(OpCodes.Dup);
+
+                            generator.LdArg(i + 1);
+
+                            generator.Emit(OpCodes.Stfld, closureFields[i]);
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception($"ProxyMethodParameter \"{parameter.ParameterInfo.Name}\" is specified with a closure parameter, even though the method does not have any parameters.");
+                    }
+                }
+
+                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.MethodDelegate)
+                {
+
+                    // Second parameter to the Func<*> constructor  
+                    // get the address of this.DelegateMethodAsync
+                    generator.Emit(OpCodes.Ldarg_0); // this.
+                    generator.Emit(OpCodes.Ldftn, context.FinalDelegateMethodInfo); // the delegate method
+
+                    // Instantiate the Func<*>
+                    var delegateType = GetDelegateType(interfaceType, sourceMethodInfo, closureFinalType, hasParameters, returnsVoid);
+
+                    var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+                    generator.Emit(OpCodes.Newobj, delegateConstructor);
                 }
             }
-
-            // Second parameter to the Func<*> constructor
-            // get the address of this.DelegateMethodAsync
-            generator.Emit(OpCodes.Ldarg_0); // this.
-            generator.Emit(OpCodes.Ldftn, context.FinalDelegateMethodInfo); // the delegate method
-
-            // Instantiate the Func<*>
-            var delegateType = GetDelegateType(interfaceType, sourceMethodInfo, closureFinalType, hasParameters, returnsVoid);
-
-            var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
-            generator.Emit(OpCodes.Newobj, delegateConstructor);
-
-            var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod);
 
             generator.EmitCall(OpCodes.Call, proxyMethod, null); // call the proxy method
             generator.Emit(OpCodes.Ret);
@@ -131,7 +147,7 @@ namespace Serpent.InterfaceProxy
 
         private static Type GetFinalClosureType(
             Type @interface,
-            Func<Type, ModuleBuilder, MethodInfo, TypeBuilder> createClosureTypeFunc,
+            Func<Type, ModuleBuilder, MethodInfo, TypeBuilder> createClosureTypeBuilderFunc,
             ModuleBuilder moduleBuilder,
             ParameterInfo[] parameters,
             MethodInfo method,
@@ -141,7 +157,7 @@ namespace Serpent.InterfaceProxy
 
             if (parameters.Length > 0)
             {
-                var closureTypeBuilder = createClosureTypeFunc(@interface, moduleBuilder, method);
+                var closureTypeBuilder = createClosureTypeBuilderFunc(@interface, moduleBuilder, method);
                 closureFinalType = ClosureBuilder.CreateClosureType(closureTypeBuilder, method).MakeGenericTypeIfNecessary(genericArguments);
             }
 
@@ -156,7 +172,7 @@ namespace Serpent.InterfaceProxy
         }
 
         private static MethodInfo GetProxyMethod(
-            Type closureFinalType,
+            Type finalClosureType,
             Type parentType,
             bool hasParameters,
             bool hasReturnValue,
@@ -164,13 +180,13 @@ namespace Serpent.InterfaceProxy
             bool hasGenericReturnValueArguments,
             bool isAsyncMethod)
         {
-            var proxyMethods = GetExecuteAsyncMethods(parentType);
+            var proxyMethods = parentType.GetInstanceMethods().Where(im => im.GetCustomAttributes(typeof(ProxyMethodAttribute), true).Any());
 
             var proxyMethodGenericParameters = ImmutableArray<Type>.Empty;
 
             if (hasParameters)
             {
-                proxyMethodGenericParameters = proxyMethodGenericParameters.Add(closureFinalType);
+                proxyMethodGenericParameters = proxyMethodGenericParameters.Add(finalClosureType);
             }
 
             if (hasReturnValue)
@@ -190,20 +206,39 @@ namespace Serpent.InterfaceProxy
             }
 
             // get Task<> return type if needed
-            proxyMethods = proxyMethods.Where(method => typeof(Task).IsAssignableFrom(method.ReturnType) == isAsyncMethod);
+            proxyMethods = proxyMethods.Where(method => method.ReturnType.Is<Task>() == isAsyncMethod);
 
-            var executeAsyncParameterCount = 1 + (hasParameters ? 1 : 0);
+            var minimumParameterCount = 1 + (hasParameters ? 1 : 0);
 
-            proxyMethods = proxyMethods.Where(method => method.GetParameters().Length == executeAsyncParameterCount);
+            proxyMethods = proxyMethods
+                .Select(m => new { Method = m, Parameters = m.GetParameters() })
+                .Where(method => method.Parameters.Length >= minimumParameterCount)
+                .Where(method =>
+                    {
+                        if (hasParameters == true)
+                        {
+                            return method.Parameters.Count(
+                                    p => p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType == ProxyMethodParameterType.ParametersClosure) == 1;
+                        }
 
-            var executeAsync = proxyMethods.Single();
+                        return method.Parameters.All(
+                            p => p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType != ProxyMethodParameterType.ParametersClosure);
+                    })
+                .OrderByDescending(method => method.Parameters.Length).Select(method => method.Method);
+
+            var proxyMethod = proxyMethods.FirstOrDefault();
+
+            if (proxyMethod == null)
+            {
+                throw new Exception("Not a single method matching the proxy method required could be found");
+            }
 
             if (proxyMethodGenericParameters.Length > 0)
             {
-                executeAsync = executeAsync.MakeGenericMethod(proxyMethodGenericParameters.ToArray());
+                proxyMethod = proxyMethod.MakeGenericMethod(proxyMethodGenericParameters.ToArray());
             }
 
-            return executeAsync;
+            return proxyMethod;
         }
 
         private TypeBuilder CreateClosureTypeFunc(Type interfaceType, ModuleBuilder moduleBuilder, MethodInfo method)
@@ -231,10 +266,10 @@ namespace Serpent.InterfaceProxy
             return new CreateMethodFuncResult<MethodContext>(
                 methodData,
                 new MethodContext
-                    {
-                        ClosureFinalType = finalClosureType,
-                        FinalDelegateMethodInfo = finalDelegateMethod
-                    });
+                {
+                    ClosureFinalType = finalClosureType,
+                    FinalDelegateMethodInfo = finalDelegateMethod
+                });
         }
 
         public class MethodContext : BaseMethodContext

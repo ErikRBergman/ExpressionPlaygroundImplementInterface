@@ -60,6 +60,11 @@
     <Compile Include="Extensions\ProxyTypeBuilderExtensions.cs" />
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="GenerateTypeResult.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\MethodCallContext.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\ProxyMethodAttribute.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\ProxyMethodParameterType.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\ProxyMethodParameterTypeAttribute.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\MethodInfoExtensions.cs" />
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Implementations\ModifiedProxyTypeBuilder\ModifiedProxyTypeBuilder.cs" />

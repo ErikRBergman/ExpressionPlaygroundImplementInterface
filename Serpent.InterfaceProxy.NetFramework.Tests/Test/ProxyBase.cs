@@ -6,6 +6,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
     using System;
     using System.Threading.Tasks;
 
+    using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
+
     public class ProxyBase<TInterface>
     {
         private readonly TInterface inner;
@@ -15,7 +17,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             this.inner = inner;
         }
 
-        protected void Execute(Action<TInterface> action)
+        [ProxyMethod]
+        protected void Execute([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Action<TInterface> action)
         {
             try
             {
@@ -26,7 +29,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected TResult Execute<TResult>(Func<TInterface, TResult> func)
+        [ProxyMethod]
+        protected TResult Execute<TResult>([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, TResult> func)
         {
             try
             {
@@ -37,7 +41,10 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected void Execute<TParameter>(TParameter parameter, Action<TParameter, TInterface> action)
+        [ProxyMethod]
+        protected void Execute<TParameter>(
+            [ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, 
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]Action<TParameter, TInterface> action)
         {
             try
             {
@@ -48,7 +55,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected TResult Execute<TParameter, TResult>(TParameter parameter, Func<TParameter, TInterface, TResult> func)
+        [ProxyMethod]
+        protected TResult Execute<TParameter, TResult>([ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]Func<TParameter, TInterface, TResult> func)
         {
             try
             {
@@ -59,7 +67,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected async Task ExecuteAsync(Func<TInterface, Task> func)
+        [ProxyMethod]
+        protected async Task ExecuteAsync([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, Task> func)
         {
             try
             {
@@ -70,7 +79,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected async Task<TResult> ExecuteAsync<TResult>(Func<TInterface, Task<TResult>> func)
+        [ProxyMethod]
+        protected async Task<TResult> ExecuteAsync<TResult>([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, Task<TResult>> func)
         {
             try
             {
@@ -81,7 +91,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected async Task ExecuteAsync<TParameter>(TParameter parameter, Func<TParameter, TInterface, Task> func)
+        [ProxyMethod]
+        protected async Task ExecuteAsync<TParameter>([ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TParameter, TInterface, Task> func)
         {
             try
             {
@@ -92,7 +103,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        protected async Task<TResult> ExecuteAsync<TParameter, TResult>(TParameter parameter, Func<TParameter, TInterface, Task<TResult>> func)
+        [ProxyMethod]
+        protected async Task<TResult> ExecuteAsync<TParameter, TResult>([ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]Func<TParameter, TInterface, Task<TResult>> func)
         {
             try
             {

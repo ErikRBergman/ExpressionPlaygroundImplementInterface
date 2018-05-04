@@ -60,6 +60,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\Serpent.InterfaceProxy.NetFramework\Serpent.InterfaceProxy.NetFramework.csproj">
+      <Project>{3A95DE7D-3B01-4EA9-B1BD-CD3EF76C49AB}</Project>
+      <Name>Serpent.InterfaceProxy.NetFramework</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

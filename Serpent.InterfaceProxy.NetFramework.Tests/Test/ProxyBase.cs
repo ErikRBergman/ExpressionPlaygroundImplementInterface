@@ -18,7 +18,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         }
 
         [ProxyMethod]
-        protected void Execute([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Action<TInterface> action)
+        protected void Execute(
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Action<TInterface> action)
         {
             try
             {
@@ -30,8 +31,11 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         }
 
         [ProxyMethod]
-        protected TResult Execute<TResult>([ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, TResult> func)
+        protected TResult Execute<TResult>(
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodName)] string methodName,
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, TResult> func)
         {
+
             try
             {
                 return func(this.inner);
@@ -92,7 +96,9 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         }
 
         [ProxyMethod]
-        protected async Task ExecuteAsync<TParameter>([ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TParameter, TInterface, Task> func)
+        protected async Task ExecuteAsync<TParameter>(
+            [ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter, 
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TParameter, TInterface, Task> func)
         {
             try
             {

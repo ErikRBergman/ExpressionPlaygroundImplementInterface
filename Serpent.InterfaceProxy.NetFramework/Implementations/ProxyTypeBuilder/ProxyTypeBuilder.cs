@@ -67,6 +67,12 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
             foreach (var parameter in proxyMethodParameters)
             {
+                var x = "Holla";
+
+                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.MethodName)
+                {
+                    generator.Emit(OpCodes.Ldstr, sourceMethodInfo.Name);
+                }
 
                 if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure)
                 {

@@ -63,6 +63,7 @@
     <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="GenerateTypeResult.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\BaseMethodProxyWithMethodAndTypeNames.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\BaseMethodProxyWithMethodNames2.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\MethodCallContext.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\BaseMethodProxy.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\ProxyMethodAttribute.cs" />

@@ -59,7 +59,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             var _debug_test_ = methodName;
 #endif
 
-            var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod);
+            var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod, interfaceType);
 
             var proxyMethodParameters = proxyMethod.GetProxyMethodParameters();
 
@@ -244,7 +244,8 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             bool hasReturnValue,
             Type returnType,
             bool hasGenericReturnValueArguments,
-            bool isAsyncMethod)
+            bool isAsyncMethod,
+            Type interfaceType)
         {
             IEnumerable<MethodInfo> proxyMethods = TypeMethodInfoLookup.GetOrAdd(
                 parentType,
@@ -288,6 +289,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                             HasParameters = hasParameters,
                             HasReturnValue = hasReturnValue,
                             ReturnType = returnType,
+                            InterfaceType = interfaceType,
                             Parameters = parameters.Select(p => new { Parameter = p, ProxyMethodParameterType = p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType ?? ProxyMethodParameterType.Unknown }).ToArray(),
                         };
                     })
@@ -304,12 +306,13 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                         }
 
                         var parameterType = parameter.Parameter.ParameterType;
-                        var arguments = parameterType.GetGenericArguments();
+                        var genericArgumentTypes = parameterType.GetGenericArguments();
 
+                        Type delegateInterfaceType = null;
 
                         if (method.HasReturnValue)
                         {
-                            var returnValueArgument = arguments.Last();
+                            var returnValueArgument = genericArgumentTypes.Last();
 
                             if (method.IsAsync)
                             {
@@ -323,7 +326,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                                 return false;
                             }
 
-
+                            delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 2];
                         }
                         else
                         {
@@ -333,6 +336,8 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                                 {
                                     return false;
                                 }
+
+                                delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 2];
                             }
                             else
                             {
@@ -341,8 +346,13 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                                     return false;
                                 }
 
+                                delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 1];
                             }
+                        }
 
+                        if (delegateInterfaceType != method.InterfaceType)
+                        {
+                            return false;
                         }
 
                         return true;

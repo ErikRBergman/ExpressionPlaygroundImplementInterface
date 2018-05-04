@@ -57,7 +57,6 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             var _debug_test_ = methodName;
 #endif
 
-
             var proxyMethod = GetProxyMethod(closureFinalType, parentType, hasParameters, hasReturnValue, returnType, hasGenericReturnValueArguments, isAsyncMethod);
 
             var proxyMethodParameters = proxyMethod.GetProxyMethodParameters();
@@ -67,59 +66,97 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
             foreach (var parameter in proxyMethodParameters)
             {
-                var x = "Holla";
-
-                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.MethodName)
+                switch (parameter.ProxyMethodParameterType)
                 {
-                    generator.Emit(OpCodes.Ldstr, sourceMethodInfo.Name);
-                }
+                    case ProxyMethodParameterType.TypeName:
+                        EmitTypeName(interfaceType, parameter, generator);
+                        break;
 
-                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure)
-                {
-                    // only emit instantiating the closure if it's needed
-                    if (hasParameters)
-                    {
-                        var closureConstructor = closureFinalType.GetConstructors().Single();
+                    case ProxyMethodParameterType.MethodName:
+                        EmitMethodName(sourceMethodInfo, parameter, generator);
+                        break;
 
-                        generator.Emit(OpCodes.Newobj, closureConstructor);
+                    case ProxyMethodParameterType.ParametersClosure:
+                        EmitParametersClosure(parameter, closureFinalType, generator, parameters);
+                        break;
 
-                        // Populate the closure
-                        var closureFields = closureFinalType.GetFields();
+                    case ProxyMethodParameterType.MethodDelegate:
+                        EmitMethodDelegate(interfaceType, sourceMethodInfo, context, generator, closureFinalType, hasParameters, returnsVoid);
+                        break;
 
-                        var parameterCount = parameters.Length;
-                        for (var i = 0; i < parameterCount; i++)
-                        {
-                            generator.Emit(OpCodes.Dup);
-
-                            generator.LdArg(i + 1);
-
-                            generator.Emit(OpCodes.Stfld, closureFields[i]);
-                        }
-                    }
-                    else
-                    {
-                        throw new Exception($"ProxyMethodParameter \"{parameter.ParameterInfo.Name}\" is specified with a closure parameter, even though the method does not have any parameters.");
-                    }
-                }
-
-                if (parameter.ProxyMethodParameterType == ProxyMethodParameterType.MethodDelegate)
-                {
-
-                    // Second parameter to the Func<*> constructor  
-                    // get the address of this.DelegateMethodAsync
-                    generator.Emit(OpCodes.Ldarg_0); // this.
-                    generator.Emit(OpCodes.Ldftn, context.FinalDelegateMethodInfo); // the delegate method
-
-                    // Instantiate the Func<*>
-                    var delegateType = GetDelegateType(interfaceType, sourceMethodInfo, closureFinalType, hasParameters, returnsVoid);
-
-                    var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
-                    generator.Emit(OpCodes.Newobj, delegateConstructor);
+                    default:
+                        throw new Exception($"Could not determine the parameter type of proxy method parameter \"{parameter.ParameterInfo.Name}\" .");
                 }
             }
 
             generator.EmitCall(OpCodes.Call, proxyMethod, null); // call the proxy method
             generator.Emit(OpCodes.Ret);
+        }
+
+        private static void EmitMethodDelegate(
+            Type interfaceType,
+            MethodInfo sourceMethodInfo,
+            MethodContext context,
+            ILGenerator generator,
+            Type closureFinalType,
+            bool hasParameters,
+            bool returnsVoid)
+        {
+            // Second parameter to the Func<*> constructor  
+            // get the address of this.DelegateMethodAsync
+            generator.Emit(OpCodes.Ldarg_0); // this.
+            generator.Emit(OpCodes.Ldftn, context.FinalDelegateMethodInfo); // the delegate method
+
+            // Instantiate the Func<*>
+            var delegateType = GetDelegateType(interfaceType, sourceMethodInfo, closureFinalType, hasParameters, returnsVoid);
+
+            var delegateConstructor = delegateType.GetConstructors().Single(p => p.GetParameters().Length == 2);
+            generator.Emit(OpCodes.Newobj, delegateConstructor);
+        }
+
+        private static void EmitParametersClosure(ProxyMethodParameter parameter, Type closureFinalType, ILGenerator generator, ParameterInfo[] parameters)
+        {
+            if (parameters.Length == 0)
+            {
+                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is specified with a closure parameter, even though the method does not have any parameters.");
+            }
+
+            var closureConstructor = closureFinalType.GetConstructors().Single();
+
+            generator.Emit(OpCodes.Newobj, closureConstructor);
+
+            // Populate the closure
+            var closureFields = closureFinalType.GetFields();
+
+            var parameterCount = parameters.Length;
+            for (var i = 0; i < parameterCount; i++)
+            {
+                generator.Emit(OpCodes.Dup);
+
+                generator.LdArg(i + 1);
+
+                generator.Emit(OpCodes.Stfld, closureFields[i]);
+            }
+        }
+
+        private static void EmitMethodName(MethodInfo sourceMethodInfo, ProxyMethodParameter parameter, ILGenerator generator)
+        {
+            if (parameter.ParameterInfo.ParameterType != typeof(string))
+            {
+                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is attributed with TypeName but it is not a string.");
+            }
+
+            generator.Emit(OpCodes.Ldstr, sourceMethodInfo.Name);
+        }
+
+        private static void EmitTypeName(Type interfaceType, ProxyMethodParameter parameter, ILGenerator generator)
+        {
+            if (parameter.ParameterInfo.ParameterType != typeof(string))
+            {
+                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is attributed with TypeName but it is not a string.");
+            }
+
+            generator.Emit(OpCodes.Ldstr, interfaceType.FullName);
         }
 
         private static Type GetDelegateType(Type interfaceType, MethodInfo sourceMethodInfo, Type closureFinalType, bool hasParameters, bool returnsVoid)

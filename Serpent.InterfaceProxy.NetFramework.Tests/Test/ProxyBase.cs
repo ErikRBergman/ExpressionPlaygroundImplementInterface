@@ -33,6 +33,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         [ProxyMethod]
         protected TResult Execute<TResult>(
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodName)] string methodName,
+            [ProxyMethodParameterType(ProxyMethodParameterType.TypeName)] string typeName,
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TInterface, TResult> func)
         {
 

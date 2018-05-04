@@ -228,9 +228,22 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
         [TestMethod]
         public async Task Proxy_With_Multple_Interfaces_Async()
         {
-            var proxyGenerator = CreateProxyTypeWith2Interfaces();
+            var proxyResult = CreateProxyTypeWith2Interfaces();
 
-            //var factory = (Func<IInterface1, IInterface2, >) proxyGenerator.Factories[typeof(ProxyBase<IInterface1, IInterface2>)];
+            var factory = proxyResult.GetFactory<IInterface1, IInterface2, ProxyBase<IInterface1, IInterface2>>();
+
+            var c1 = new Class1();
+            var c2 = new Class2();
+            var instance = factory(c1, c2);
+
+            var i1 = instance as IInterface1;
+            var i2 = instance as IInterface2;
+
+            await i1.Method1Async("I1");
+            await i2.Method2Async("I2");
+
+            Assert.AreEqual("I1", c1.LastPrefix);
+            Assert.AreEqual("I2", c2.LastPrefix);
 
         }
 
@@ -247,7 +260,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             return new GenerateProxyResult<ITestInterface>(
                 generatedType.GeneratedType,
                 generatedType.InterfacesImplemented,
-                (Func<ITestInterface, ITestInterface>)generatedType.Factories.FirstOrDefault(f => f.GetType().Is<Func<ITestInterface, ITestInterface>>()));
+                generatedType.GetFactory<ITestInterface, ITestInterface>());
         }
 
         private static GenerateTypeResult CreateProxyTypeWith2Interfaces()

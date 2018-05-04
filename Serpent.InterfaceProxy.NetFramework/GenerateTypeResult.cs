@@ -2,6 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+
+    using Serpent.InterfaceProxy.Extensions;
 
     public struct GenerateTypeResult
     {
@@ -17,6 +20,26 @@
         public IEnumerable<Type> InterfacesImplemented { get; }
 
         public IEnumerable<Delegate> Factories { get; }
+
+        public Func<TResult> GetFactory<TResult>() => (Func<TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<TResult>>());
+        public Func<T1, TResult> GetFactory<T1, TResult>() => (Func<T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T1, TResult>>());
+        public Func<T2, T1, TResult> GetFactory<T2, T1, TResult>() => (Func<T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T2, T1, TResult>>());
+        public Func<T3, T2, T1, TResult> GetFactory<T3, T2, T1, TResult>() => (Func<T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T3, T2, T1, TResult>>());
+        public Func<T4, T3, T2, T1, TResult> GetFactory<T4, T3, T2, T1, TResult>() => (Func<T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T4, T3, T2, T1, TResult>>());
+        public Func<T5, T4, T3, T2, T1, TResult> GetFactory<T5, T4, T3, T2, T1, TResult>() => (Func<T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T5, T4, T3, T2, T1, TResult>>());
+        public Func<T6, T5, T4, T3, T2, T1, TResult> GetFactory<T6, T5, T4, T3, T2, T1, TResult>() => (Func<T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+        public Func<T16, T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult> GetFactory<T16, T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>() => (Func<T16, T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>)this.Factories.FirstOrDefault(f => f.GetType().Is<Func<T16, T15, T14, T13, T12, T11, T10, T9, T8, T7, T6, T5, T4, T3, T2, T1, TResult>>());
+
+
     }
 
     public struct GenerateProxyResult<TInterface>

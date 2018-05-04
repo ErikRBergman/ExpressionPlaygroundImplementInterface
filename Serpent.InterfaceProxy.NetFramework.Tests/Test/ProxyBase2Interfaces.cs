@@ -20,6 +20,27 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         Task<string> Method2Async(string prefix);
     }
 
+    public class Class1 : IInterface1
+    {
+        public string LastPrefix { get; private set; }
+
+        public async Task<string> Method1Async(string prefix)
+        {
+            this.LastPrefix = prefix;
+            return prefix + nameof(this.Method1Async);
+        }
+    }
+
+    public class Class2 : IInterface2
+    {
+        public string LastPrefix { get; private set; }
+
+        public async Task<string> Method2Async(string prefix)
+        {
+            this.LastPrefix = prefix;
+            return prefix + nameof(this.Method2Async);
+        }
+    }
 
     public class ProxyBase<TI1, TI2>
     {
@@ -130,13 +151,17 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
             }
         }
 
-        public IEnumerable<string> Methodcalls { get; } = new ConcurrentBag<string>();
+        public ConcurrentBag<string> Methodcalls { get; } = new ConcurrentBag<string>();
 
         [ProxyMethod]
         protected async Task<TResult> ExecuteAsync<TParameter, TResult>(
+            [ProxyMethodParameterType(ProxyMethodParameterType.MethodName)] string methodName,
+            [ProxyMethodParameterType(ProxyMethodParameterType.TypeName)] string typeName,
             [ProxyMethodParameterType(ProxyMethodParameterType.ParametersClosure)] TParameter parameter,
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)] Func<TParameter, TI1, Task<TResult>> func)
         {
+            this.Methodcalls.Add($"{typeName}.{methodName}");
+
             try
             {
                 return await func(parameter, this.innerInterface1);

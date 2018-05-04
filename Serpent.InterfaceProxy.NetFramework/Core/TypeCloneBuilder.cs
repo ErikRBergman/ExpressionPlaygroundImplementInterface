@@ -105,7 +105,7 @@ namespace Serpent.InterfaceProxy
         private static IEnumerable<Delegate> GenerateFactoryDelegates(Type generatedType)
         {
             var constructors = generatedType.GetConstructors();
-            var factoryTypes = generatedType.GetInterfaces().Prepend(typeof(object)).Prepend(generatedType).ToArray();
+            var factoryTypes = generatedType.GetInterfaces().Prepend(typeof(object)).Prepend(generatedType).Prepend(generatedType.BaseType).ToArray();
 
             foreach (var factoryType in factoryTypes)
             {

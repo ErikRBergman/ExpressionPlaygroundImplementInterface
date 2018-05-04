@@ -225,7 +225,16 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             var methodCall = p.Test.TestMethodCalls.Single(mc => string.CompareOrdinal(nameof(p.Proxy.Result_Parameters), mc.MethodName) == 0);
         }
 
-        private static GenerateProxyResult<ITestInterface> GetProxyTypeInformation()
+        [TestMethod]
+        public async Task Proxy_With_Multple_Interfaces_Async()
+        {
+            var proxyGenerator = CreateProxyTypeWith2Interfaces();
+
+            //var factory = (Func<IInterface1, IInterface2, >) proxyGenerator.Factories[typeof(ProxyBase<IInterface1, IInterface2>)];
+
+        }
+
+        private static GenerateProxyResult<ITestInterface> CreateProxyType()
         {
             var parameters = TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>.New.AddInterface(typeof(ITestInterface))
                 .ParentType(typeof(ProxyBase<>).MakeGenericType(typeof(ITestInterface)))
@@ -238,7 +247,20 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             return new GenerateProxyResult<ITestInterface>(
                 generatedType.GeneratedType,
                 generatedType.InterfacesImplemented,
-                (Func<ITestInterface, ITestInterface>)generatedType.Factories.GetValueOrDefault(typeof(ITestInterface), null));
+                (Func<ITestInterface, ITestInterface>)generatedType.Factories.FirstOrDefault(f => f.GetType().Is<Func<ITestInterface, ITestInterface>>()));
+        }
+
+        private static GenerateTypeResult CreateProxyTypeWith2Interfaces()
+        {
+            var parameters = TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
+                .New
+                .AddInterface(typeof(IInterface1)).AddInterface(typeof(IInterface2))
+                .ParentType(typeof(ProxyBase<,>).MakeGenericType(typeof(IInterface1), typeof(IInterface2)))
+                .TypeName("MultiProxy" + "_" + Guid.NewGuid().ToString("N"));
+
+            var proxyTypeBuilder = new ProxyTypeBuilder();
+
+            return proxyTypeBuilder.GenerateType(parameters);
         }
 
         private ProxyAndTestImplementation<ITestInterface, TestInterfaceImplementation> GetProxyAndTest()
@@ -247,7 +269,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
             {
                 if (proxy.Factory == null)
                 {
-                    proxy = GetProxyTypeInformation();
+                    proxy = CreateProxyType(); 
                 }
             }
 

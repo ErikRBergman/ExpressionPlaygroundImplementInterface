@@ -23,7 +23,7 @@
             return new GenerateProxyResult<TInterfaceType>(
                 generatedType.GeneratedType, 
                 generatedType.InterfacesImplemented,
-                (Func<TInterfaceType, TInterfaceType>)generatedType.Factories.GetValueOrDefault(typeof(TInterfaceType), null));
+                (Func<TInterfaceType, TInterfaceType>)generatedType.Factories.FirstOrDefault(f => f.GetType().Is<TInterfaceType>()));
         }
     }
 }

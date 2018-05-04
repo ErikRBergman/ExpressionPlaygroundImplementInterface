@@ -5,7 +5,7 @@
 
     public struct GenerateTypeResult
     {
-        public GenerateTypeResult(Type generatedType, IEnumerable<Type> interfacesImplemented, IReadOnlyDictionary<Type, Delegate> factories)
+        public GenerateTypeResult(Type generatedType, IEnumerable<Type> interfacesImplemented, IEnumerable<Delegate> factories)
         {
             this.GeneratedType = generatedType;
             this.InterfacesImplemented = interfacesImplemented;
@@ -16,7 +16,7 @@
 
         public IEnumerable<Type> InterfacesImplemented { get; }
 
-        public IReadOnlyDictionary<Type, Delegate> Factories { get; }
+        public IEnumerable<Delegate> Factories { get; }
     }
 
     public struct GenerateProxyResult<TInterface>

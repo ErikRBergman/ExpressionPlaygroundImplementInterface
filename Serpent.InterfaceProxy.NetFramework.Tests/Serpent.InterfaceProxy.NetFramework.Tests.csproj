@@ -55,6 +55,7 @@
     <Compile Include="Test\Interfaces\IGenericInterface.cs" />
     <Compile Include="Test\Interfaces\ITestInterface.cs" />
     <Compile Include="Test\Model.cs" />
+    <Compile Include="Test\ProxyBase2Interfaces.cs" />
     <Compile Include="Test\ProxyBase - Copy.cs" />
     <Compile Include="Test\ProxyBase.cs" />
     <Compile Include="Test\TestMethodCall.cs" />

@@ -10,6 +10,7 @@ namespace Serpent.InterfaceProxy
     using System.Reflection.Emit;
 
     using Serpent.InterfaceProxy.Extensions;
+    using Serpent.InterfaceProxy.Helpers;
     using Serpent.InterfaceProxy.ImplementationBuilders;
     using Serpent.InterfaceProxy.Types;
 
@@ -60,9 +61,9 @@ namespace Serpent.InterfaceProxy
             var generatedType = typeBuilder.CreateTypeInfo();
 
             // Create a factory for each interface
-            var factories = interfaces.Select(i => new KeyValuePair<Type, Delegate>(i, GenerateFactoryDelegate(i, generatedType)));
+            var factories = GenerateFactoryDelegates(generatedType);
 
-            return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
+            return new GenerateTypeResult(generatedType, createMethodsResult.InterfacesImplemented, factories);
         }
 
         protected virtual void EmitMethodImplementation(Type interfaceType, MethodInfo sourceMethodInfo, MethodBuilder methodBuilder, TMethodContext context, Type parentType)
@@ -101,25 +102,32 @@ namespace Serpent.InterfaceProxy
             return interfaceImplementationMethodBuilder;
         }
 
-        private static Delegate GenerateFactoryDelegate(Type interfaceToImplement, Type generatedType)
+        private static IEnumerable<Delegate> GenerateFactoryDelegates(Type generatedType)
         {
-            var parameterTypes = new[] { interfaceToImplement };
+            var constructors = generatedType.GetConstructors();
+            var factoryTypes = generatedType.GetInterfaces().Prepend(typeof(object)).Prepend(generatedType).ToArray();
 
-            var builder = new DynamicMethod("DefaultTypeFactory", interfaceToImplement, parameterTypes);
-            var generator = builder.GetILGenerator();
-            generator.Emit(OpCodes.Ldarg_0);
-
-            var constructor = generatedType.GetConstructor(parameterTypes);
-
-            if (constructor == null)
+            foreach (var factoryType in factoryTypes)
             {
-                return null;
+                // create a factory for each public constructor
+                foreach (var constructor in constructors)
+                {
+                    var parameters = constructor.GetParameters();
+
+                    var builder = new DynamicMethod("TypeFactory_" + generatedType.Name, factoryType, parameters.Select(p => p.ParameterType).ToArray());
+                    var generator = builder.GetILGenerator();
+
+                    for (var i = 0; i < parameters.Length; i++)
+                    {
+                        generator.Emit(OpCodes.Ldarg_S, i);
+                    }
+
+                    generator.Emit(OpCodes.Newobj, constructor);
+                    generator.Emit(OpCodes.Ret);
+
+                    yield return builder.CreateDelegate(FuncHelper.Create(factoryType, parameters.Select(p => p.ParameterType)));
+                }
             }
-
-            generator.Emit(OpCodes.Newobj, constructor);
-            generator.Emit(OpCodes.Ret);
-
-            return builder.CreateDelegate(typeof(Func<,>).MakeGenericType(interfaceToImplement, interfaceToImplement));
         }
 
         private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
@@ -173,14 +181,14 @@ namespace Serpent.InterfaceProxy
                     typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
 
                 var createMethodData = new CreateMethodData
-                                           {
-                                               SourceMethodInfo = sourceMethod,
-                                               TypeBuilder = typeContext.TypeBuilder,
-                                               SourceType = typeContext.SourceType,
-                                               GenericArguments = genericArguments,
-                                               GenericArgumentNames = genericArgumentNames,
-                                               Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
-                                           };
+                {
+                    SourceMethodInfo = sourceMethod,
+                    TypeBuilder = typeContext.TypeBuilder,
+                    SourceType = typeContext.SourceType,
+                    GenericArguments = genericArguments,
+                    GenericArgumentNames = genericArgumentNames,
+                    Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
+                };
 
                 var createMethodContext = createMethodContextFunc(createMethodData, typeContext);
 
@@ -203,12 +211,12 @@ namespace Serpent.InterfaceProxy
             foreach (var interfaceType in interfaces)
             {
                 var typeContext = new TTypeContext
-                                      {
-                                          SourceType = interfaceType,
-                                          TypeBuilder = typeBuilder,
-                                          Parameters = parameters,
-                                          ParentType = parentType
-                                      };
+                {
+                    SourceType = interfaceType,
+                    TypeBuilder = typeBuilder,
+                    Parameters = parameters,
+                    ParentType = parentType
+                };
 
                 var methodNames = this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed);
 

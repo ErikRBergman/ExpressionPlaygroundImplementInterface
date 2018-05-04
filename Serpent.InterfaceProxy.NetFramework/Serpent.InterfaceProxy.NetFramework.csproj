@@ -48,7 +48,9 @@
     <Compile Include="BaseTypeContext.cs" />
     <Compile Include="CreateMethodData.cs" />
     <Compile Include="CreateMethodFuncResult.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\TypeCloneBuilderExtension.cs" />
+    <Compile Include="Helpers\FuncHelper.cs" />
     <Compile Include="ImplementationBuilders\ClosureBuilder.cs" />
     <Compile Include="ImplementationBuilders\DefaultConstructorGenerator.cs" />
     <Compile Include="DefaultValues.cs" />

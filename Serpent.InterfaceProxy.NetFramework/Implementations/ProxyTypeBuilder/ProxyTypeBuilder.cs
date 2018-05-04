@@ -4,6 +4,8 @@
 namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
     using System.Reflection;
@@ -214,6 +216,27 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
         }
 
+        private class GetProxyMethodInfo
+        {
+            public MethodInfo MethodInfo { get; set; }
+
+            public bool IsAsync { get; set; }
+
+            public bool HasParameters { get; set; }
+
+            public GetProxyMethodInfoParameter[] Parameters { get; set; }
+        }
+
+        private struct GetProxyMethodInfoParameter
+        {
+            public ParameterInfo Parameter { get; set; }
+
+            public ProxyMethodParameterTypeAttribute ProxyMethodParameterTypeAttribute { get; set; }
+
+        }
+
+        private static ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>> TypeMethodInfoLookup = new ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>>();
+
         private static MethodInfo GetProxyMethod(
             Type finalClosureType,
             Type parentType,
@@ -223,7 +246,9 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             bool hasGenericReturnValueArguments,
             bool isAsyncMethod)
         {
-            var proxyMethods = parentType.GetInstanceMethods().Where(im => im.GetCustomAttributes(typeof(ProxyMethodAttribute), true).Any());
+            IEnumerable<MethodInfo> proxyMethods = TypeMethodInfoLookup.GetOrAdd(
+                parentType,
+                pt => pt.GetInstanceMethods().Where(im => im.GetCustomAttributes(typeof(ProxyMethodAttribute), true).Any()).ToArray());
 
             var proxyMethodGenericParameters = ImmutableArray<Type>.Empty;
 
@@ -240,8 +265,6 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                 {
                     proxyMethods = proxyMethods.Where(method => method.ReturnType.ContainsGenericParameters);
                 }
-
-                proxyMethods = proxyMethods.Where(method => method.ReturnType != typeof(void) && method.ReturnType != typeof(Task));
             }
             else
             {
@@ -254,18 +277,86 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             var minimumParameterCount = 1 + (hasParameters ? 1 : 0);
 
             proxyMethods = proxyMethods
-                .Select(m => new { Method = m, Parameters = m.GetParameters() })
+                .Select(m =>
+                    {
+                        var parameters = m.GetParameters();
+
+                        return new
+                        {
+                            Method = m,
+                            IsAsync = isAsyncMethod,
+                            HasParameters = hasParameters,
+                            HasReturnValue = hasReturnValue,
+                            ReturnType = returnType,
+                            Parameters = parameters.Select(p => new { Parameter = p, ProxyMethodParameterType = p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType ?? ProxyMethodParameterType.Unknown }).ToArray(),
+                        };
+                    })
                 .Where(method => method.Parameters.Length >= minimumParameterCount)
                 .Where(method =>
                     {
-                        if (hasParameters == true)
+                        // Ensure the delegate is compatible
+                        var parameter = method.Parameters.FirstOrDefault(
+                            p => p.ProxyMethodParameterType == ProxyMethodParameterType.MethodDelegate);
+
+                        if (parameter == null)
+                        {
+                            return false;
+                        }
+
+                        var parameterType = parameter.Parameter.ParameterType;
+                        var arguments = parameterType.GetGenericArguments();
+
+
+                        if (method.HasReturnValue)
+                        {
+                            var returnValueArgument = arguments.Last();
+
+                            if (method.IsAsync)
+                            {
+                                if (returnValueArgument.IsGenericType == false || returnValueArgument.GetGenericTypeDefinition() != typeof(Task<>))
+                                {
+                                    return false;
+                                }
+                            }
+                            else if (returnValueArgument != method.ReturnType && returnValueArgument.IsGenericParameter == false)
+                            {
+                                return false;
+                            }
+
+
+                        }
+                        else
+                        {
+                            if (method.IsAsync)
+                            {
+                                if (method.ReturnType != typeof(Task))
+                                {
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                if (method.ReturnType != typeof(void))
+                                {
+                                    return false;
+                                }
+
+                            }
+
+                        }
+
+                        return true;
+                    })
+                .Where(method =>
+                    {
+                        if (method.HasParameters == true)
                         {
                             return method.Parameters.Count(
-                                    p => p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType == ProxyMethodParameterType.ParametersClosure) == 1;
+                                    p => p.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure) == 1;
                         }
 
                         return method.Parameters.All(
-                            p => p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType != ProxyMethodParameterType.ParametersClosure);
+                            p => p.ProxyMethodParameterType != ProxyMethodParameterType.ParametersClosure);
                     })
                 .OrderByDescending(method => method.Parameters.Length).Select(method => method.Method);
 

@@ -15,5 +15,7 @@
         public Type SourceType { get; set; }
 
         public TypeCloneBuilderParameters<TTypeContext, TMethodContext> Parameters { get; set; }
+
+        public Type ParentType { get; set; }
     }
 }

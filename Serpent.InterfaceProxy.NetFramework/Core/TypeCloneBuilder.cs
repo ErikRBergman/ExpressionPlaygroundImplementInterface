@@ -143,7 +143,7 @@ namespace Serpent.InterfaceProxy
             }
         }
 
-        private ImmutableList<string> CreateInterfaceMethods(TTypeContext typeContext, Type @interface, ImmutableList<string> usedNames, Type parentType)
+        private ImmutableList<string> CreateInterfaceMethods(TTypeContext typeContext, Type @interface, ImmutableList<string> usedNames)
         {
             foreach (var sourceMethod in @interface.GetMethods())
             {
@@ -186,7 +186,7 @@ namespace Serpent.InterfaceProxy
 
                 var interfaceImplementationMethodBuilder = CreateMethod(typeContext, createMethodContext);
 
-                this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, createMethodContext.MethodContext, parentType);
+                this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, createMethodContext.MethodContext, typeContext.ParentType);
             }
 
             return usedNames;
@@ -206,10 +206,13 @@ namespace Serpent.InterfaceProxy
                                       {
                                           SourceType = interfaceType,
                                           TypeBuilder = typeBuilder,
-                                          Parameters = parameters
+                                          Parameters = parameters,
+                                          ParentType = parentType
                                       };
 
-                result = result.AddUsedNames(this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed, parentType));
+                var methodNames = this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed);
+
+                result = result.AddUsedNames(methodNames);
 
                 result = result.AddImplementedInterface(interfaceType);
             }

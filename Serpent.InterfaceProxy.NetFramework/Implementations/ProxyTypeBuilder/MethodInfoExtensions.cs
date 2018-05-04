@@ -21,7 +21,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             {
                 var attribute = parameter.GetCustomAttribute<ProxyMethodParameterTypeAttribute>(true);
 
-                ProxyMethodParameterType parameterType = ProxyMethodParameterType.AutoDetect;
+                ProxyMethodParameterType parameterType = ProxyMethodParameterType.Unknown;
 
                 if (attribute != null)
                 {

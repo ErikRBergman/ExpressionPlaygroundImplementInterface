@@ -5,7 +5,7 @@
         /// <summary>
         /// Auto detect is currently ignored
         /// </summary>
-        AutoDetect = 0,
+        Unknown = 0,
 
         ParametersClosure = 100,
 

@@ -6,6 +6,7 @@
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using Serpent.InterfaceProxy.Core;
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
     using Serpent.InterfaceProxy.NetFramework.Tests.Test.Interfaces;

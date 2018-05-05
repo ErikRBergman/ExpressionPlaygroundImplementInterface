@@ -1,4 +1,4 @@
-﻿namespace Serpent.InterfaceProxy
+﻿namespace Serpent.InterfaceProxy.Core
 {
     using System;
     using System.Reflection;
@@ -20,6 +20,8 @@
             this.ParameterType = sourceParameter.ParameterType;
         }
 
+        public ParameterAttributes Attributes { get; set; }
+
         public object DefaultValue { get; set; }
 
         public bool HasDefaultValue { get; set; }
@@ -27,8 +29,6 @@
         public bool HasParamArrayArgument { get; set; }
 
         public string Name { get; set; }
-
-        public ParameterAttributes Attributes { get; set; }
 
         public Type ParameterType { get; set; }
 

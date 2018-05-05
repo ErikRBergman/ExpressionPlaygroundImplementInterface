@@ -8,11 +8,6 @@
 
     internal static class FuncHelper
     {
-        public static Type CreateRaw(params Type[] parameters)
-        {
-            return Get(parameters.Length).MakeGenericType(parameters);
-        }
-
         public static Type Create(Type returnValue, params Type[] parameters)
         {
             return Get(parameters.Length + 1).MakeGenericType(parameters.Prepend(returnValue).ToArray());
@@ -27,6 +22,10 @@
             return funcType.MakeGenericType(types);
         }
 
+        public static Type CreateRaw(params Type[] parameters)
+        {
+            return Get(parameters.Length).MakeGenericType(parameters);
+        }
 
         public static Type Get(int parameterCount)
         {

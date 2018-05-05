@@ -7,7 +7,9 @@
     {
         public static ImplementInterfaceMethodResult Add(this ImplementInterfaceMethodResult implementInterfaceMethodResult, ImplementInterfaceMethodResult other)
         {
-            return new ImplementInterfaceMethodResult(implementInterfaceMethodResult.InterfacesImplemented.AddRange(other.InterfacesImplemented), implementInterfaceMethodResult.NamesUsed.AddRange(other.NamesUsed));
+            return new ImplementInterfaceMethodResult(
+                implementInterfaceMethodResult.InterfacesImplemented.AddRange(other.InterfacesImplemented),
+                implementInterfaceMethodResult.NamesUsed.AddRange(other.NamesUsed));
         }
 
         public static ImplementInterfaceMethodResult AddImplementedInterface(this ImplementInterfaceMethodResult implementInterfaceMethodResult, Type interfaceType)

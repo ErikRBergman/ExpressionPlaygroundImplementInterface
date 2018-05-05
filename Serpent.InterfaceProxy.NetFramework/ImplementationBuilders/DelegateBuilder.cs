@@ -36,11 +36,7 @@
             delegateParameters = delegateParameters.Add(interfaceToImplement);
 
             // Create delegate method - to be able to pass parameters
-            var delegateMethodBuilder = typeBuilder.DefineMethod(
-                delegateMethodName,
-                MethodAttributes.Private,
-                methodInfo.ReturnType,
-                delegateParameters.ToArray());
+            var delegateMethodBuilder = typeBuilder.DefineMethod(delegateMethodName, MethodAttributes.Private, methodInfo.ReturnType, delegateParameters.ToArray());
 
             if (genericArguments.Length > 0)
             {

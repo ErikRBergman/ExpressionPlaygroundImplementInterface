@@ -58,17 +58,19 @@
         }
 
         /// <summary>
-        ///     Determines whether an instance of a type implements or inherits from another type.
+        /// Determines whether an instance of a type implements or inherits from another type.
         ///     For example: The Melon type inherits from Fruit (which implements IFruit).
         ///     typeof(Melon).Is(typeof(Fruit) returns true.
         ///     typeof(Fruit).Is(typeof(Melon) returns false.
         ///     typeof(Melon).Is(typeof(IFruit)) returns true.
         /// </summary>
+        /// <typeparam name="TType">The type to check for
+        /// </typeparam>
         /// <param name="type">
-        ///     The type to check if it inherits from or implements
+        /// The type to check if it inherits from or implements
         /// </param>
         /// <returns>
-        ///     True or false
+        /// True or false
         /// </returns>
         public static bool Is<TType>(this Type type)
         {

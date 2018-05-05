@@ -1,4 +1,4 @@
-﻿namespace Serpent.InterfaceProxy
+﻿namespace Serpent.InterfaceProxy.Core
 {
     using System;
     using System.Collections.Immutable;
@@ -10,7 +10,6 @@
     public class TypeCloneBuilderParameters : TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
     {
         public static new TypeCloneBuilderParameters New => new TypeCloneBuilderParameters();
-
     }
 
     public class TypeCloneBuilderParameters<TTypeContext, TMethodContext>
@@ -20,13 +19,6 @@
         public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> New => new TypeCloneBuilderParameters<TTypeContext, TMethodContext>();
 
         public Func<CreateMethodData, TTypeContext, CreateMethodFuncResult<TMethodContext>> CreateMethodFunc { get; set; }
-
-        public Action<TypeBuilder> OnTypeBuilderCreatedAction { get; set; }
-
-        public Action<TypeBuilder> OnTypeBuilderCreatedAndConfiguredAction { get; set; }
-
-        public Action<TypeBuilder> OnBeforeTypeIsFinalizedAction { get; set; }
-
 
         /// <summary>
         ///     A predicate indicating whether to implement the interface the source type is implementing or not
@@ -42,6 +34,12 @@
         public ModuleBuilder ModuleBuilder { get; set; } = DefaultValues.DefaultModuleBuilder;
 
         public string Namespace { get; set; } = DefaultValues.DefaultTypeNamespace;
+
+        public Action<TypeBuilder> OnBeforeTypeIsFinalizedAction { get; set; }
+
+        public Action<TypeBuilder> OnTypeBuilderCreatedAction { get; set; }
+
+        public Action<TypeBuilder> OnTypeBuilderCreatedAndConfiguredAction { get; set; }
 
         public Type ParentType { get; set; }
 

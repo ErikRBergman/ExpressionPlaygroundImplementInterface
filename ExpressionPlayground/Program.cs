@@ -8,6 +8,7 @@ namespace ExpressionPlayground
     using System.Threading.Tasks;
 
     using Serpent.InterfaceProxy;
+    using Serpent.InterfaceProxy.Core;
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
     using Serpent.InterfaceProxy.NetFramework.Tests;

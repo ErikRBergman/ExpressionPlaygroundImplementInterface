@@ -5,6 +5,12 @@
 
     public static class DictionaryExtensions
     {
+        public static Dictionary<TKey, TValue> Addf<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+            dictionary.Add(key, value);
+            return dictionary;
+        }
+
         public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
         {
             if (dictionary.TryGetValue(key, out var value))
@@ -13,12 +19,6 @@
             }
 
             return defaultValue;
-        }
-
-        public static Dictionary<TKey, TValue> Addf<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
-        {
-            dictionary.Add(key, value);
-            return dictionary;
         }
 
         public static Dictionary<TItem, TItem> ZipToDictionaryMap<TItem>(this IEnumerable<TItem> items, IEnumerable<TItem> moreItems)

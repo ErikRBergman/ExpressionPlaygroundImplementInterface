@@ -2,7 +2,7 @@
 {
     using System;
 
-    [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Parameter)]
     public class ProxyMethodParameterTypeAttribute : Attribute
     {
         public ProxyMethodParameterTypeAttribute(ProxyMethodParameterType parameterType)

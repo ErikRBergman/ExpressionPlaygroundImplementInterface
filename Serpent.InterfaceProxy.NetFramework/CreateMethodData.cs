@@ -5,18 +5,20 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+    using Serpent.InterfaceProxy.Core;
+
     public struct CreateMethodData
     {
-        public Type SourceType { get; set; }
-
-        public TypeBuilder TypeBuilder { get; set; }
-
-        public MethodInfo SourceMethodInfo { get; set; }
-
-        public IEnumerable<TypeBuilderMethodParameter> Parameters { get; set; }
+        public string[] GenericArgumentNames { get; set; }
 
         public Type[] GenericArguments { get; set; }
 
-        public string[] GenericArgumentNames { get; set; }
+        public IEnumerable<TypeBuilderMethodParameter> Parameters { get; set; }
+
+        public MethodInfo SourceMethodInfo { get; set; }
+
+        public Type SourceType { get; set; }
+
+        public TypeBuilder TypeBuilder { get; set; }
     }
 }

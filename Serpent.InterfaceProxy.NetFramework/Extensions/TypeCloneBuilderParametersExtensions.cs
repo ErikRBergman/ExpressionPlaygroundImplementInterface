@@ -5,9 +5,13 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+    using Serpent.InterfaceProxy.Core;
+
     public static class TypeCloneBuilderParametersExtensions
     {
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, Type @interface)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            Type @interface)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
@@ -15,7 +19,8 @@
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext, TType>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> AddInterface<TTypeContext, TMethodContext, TType>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
@@ -78,7 +83,18 @@
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> OutputInterface<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ModuleBuilder<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            ModuleBuilder moduleBuilder)
+            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
+            where TMethodContext : BaseMethodContext
+        {
+            parameters.ModuleBuilder = moduleBuilder;
+            return parameters;
+        }
+
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> OutputInterface<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
@@ -91,7 +107,9 @@
                     | System.Reflection.MethodAttributes.Abstract);
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ParentType<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, Type parentType)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ParentType<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            Type parentType)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
@@ -99,7 +117,9 @@
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeAttributes<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, TypeAttributes typeAttributes)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeAttributes<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            TypeAttributes typeAttributes)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
@@ -107,23 +127,15 @@
             return parameters;
         }
 
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeName<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, string typeName)
+        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> TypeName<TTypeContext, TMethodContext>(
+            this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters,
+            string typeName)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
             where TMethodContext : BaseMethodContext
         {
             parameters.TypeName = typeName;
             return parameters;
         }
-
-        public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> ModuleBuilder<TTypeContext, TMethodContext>(this TypeCloneBuilderParameters<TTypeContext, TMethodContext> parameters, ModuleBuilder moduleBuilder)
-            where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
-            where TMethodContext : BaseMethodContext
-        {
-            parameters.ModuleBuilder = moduleBuilder;
-            return parameters;
-        }
-
-
 
         public struct IsValidResult
         {

@@ -12,11 +12,14 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
     using System.Reflection.Emit;
     using System.Threading.Tasks;
 
+    using Serpent.InterfaceProxy.Core;
     using Serpent.InterfaceProxy.Extensions;
     using Serpent.InterfaceProxy.ImplementationBuilders;
 
     public class ProxyTypeBuilder : TypeCloneBuilder<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
     {
+        private static readonly ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>> TypeMethodInfoLookup = new ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>>();
+
         public override GenerateTypeResult GenerateType(TypeCloneBuilderParameters<TypeContext, MethodContext> parameters)
         {
             if (parameters == null)
@@ -116,11 +119,22 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             generator.Emit(OpCodes.Newobj, delegateConstructor);
         }
 
+        private static void EmitMethodName(MethodInfo sourceMethodInfo, ProxyMethodParameter parameter, ILGenerator generator)
+        {
+            if (parameter.ParameterInfo.ParameterType != typeof(string))
+            {
+                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is attributed with TypeName but it is not a string.");
+            }
+
+            generator.Emit(OpCodes.Ldstr, sourceMethodInfo.Name);
+        }
+
         private static void EmitParametersClosure(ProxyMethodParameter parameter, Type closureFinalType, ILGenerator generator, ParameterInfo[] parameters)
         {
             if (parameters.Length == 0)
             {
-                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is specified with a closure parameter, even though the method does not have any parameters.");
+                throw new Exception(
+                    $"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is specified with a closure parameter, even though the method does not have any parameters.");
             }
 
             var closureConstructor = closureFinalType.GetConstructors().Single();
@@ -139,16 +153,6 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
                 generator.Emit(OpCodes.Stfld, closureFields[i]);
             }
-        }
-
-        private static void EmitMethodName(MethodInfo sourceMethodInfo, ProxyMethodParameter parameter, ILGenerator generator)
-        {
-            if (parameter.ParameterInfo.ParameterType != typeof(string))
-            {
-                throw new Exception($"Proxy method parameter \"{parameter.ParameterInfo.Name}\" is attributed with TypeName but it is not a string.");
-            }
-
-            generator.Emit(OpCodes.Ldstr, sourceMethodInfo.Name);
         }
 
         private static void EmitTypeName(Type interfaceType, ProxyMethodParameter parameter, ILGenerator generator)
@@ -216,27 +220,6 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
         }
 
-        private class GetProxyMethodInfo
-        {
-            public MethodInfo MethodInfo { get; set; }
-
-            public bool IsAsync { get; set; }
-
-            public bool HasParameters { get; set; }
-
-            public GetProxyMethodInfoParameter[] Parameters { get; set; }
-        }
-
-        private struct GetProxyMethodInfoParameter
-        {
-            public ParameterInfo Parameter { get; set; }
-
-            public ProxyMethodParameterTypeAttribute ProxyMethodParameterTypeAttribute { get; set; }
-
-        }
-
-        private static ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>> TypeMethodInfoLookup = new ConcurrentDictionary<Type, IReadOnlyCollection<MethodInfo>>();
-
         private static MethodInfo GetProxyMethod(
             Type finalClosureType,
             Type parentType,
@@ -277,62 +260,58 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
             var minimumParameterCount = 1 + (hasParameters ? 1 : 0);
 
-            proxyMethods = proxyMethods
-                .Select(m =>
-                    {
-                        var parameters = m.GetParameters();
-
-                        return new
+            proxyMethods = proxyMethods.Select(
+                    m =>
                         {
-                            Method = m,
-                            IsAsync = isAsyncMethod,
-                            HasParameters = hasParameters,
-                            HasReturnValue = hasReturnValue,
-                            ReturnType = returnType,
-                            InterfaceType = interfaceType,
-                            Parameters = parameters.Select(p => new { Parameter = p, ProxyMethodParameterType = p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType ?? ProxyMethodParameterType.Unknown }).ToArray(),
-                        };
-                    })
+                            var parameters = m.GetParameters();
+
+                            return new
+                                       {
+                                           Method = m,
+                                           IsAsync = isAsyncMethod,
+                                           HasParameters = hasParameters,
+                                           HasReturnValue = hasReturnValue,
+                                           ReturnType = returnType,
+                                           InterfaceType = interfaceType,
+                                           Parameters = parameters.Select(
+                                                   p => new
+                                                            {
+                                                                Parameter = p,
+                                                                ProxyMethodParameterType =
+                                                                    p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType ?? ProxyMethodParameterType.Unknown
+                                                            })
+                                               .ToArray()
+                                       };
+                        })
                 .Where(method => method.Parameters.Length >= minimumParameterCount)
-                .Where(method =>
-                    {
-                        // Ensure the delegate is compatible
-                        var parameter = method.Parameters.FirstOrDefault(
-                            p => p.ProxyMethodParameterType == ProxyMethodParameterType.MethodDelegate);
-
-                        if (parameter == null)
+                .Where(
+                    method =>
                         {
-                            return false;
-                        }
+                            // Ensure the delegate is compatible
+                            var parameter = method.Parameters.FirstOrDefault(p => p.ProxyMethodParameterType == ProxyMethodParameterType.MethodDelegate);
 
-                        var parameterType = parameter.Parameter.ParameterType;
-                        var genericArgumentTypes = parameterType.GetGenericArguments();
-
-                        Type delegateInterfaceType = null;
-
-                        if (method.HasReturnValue)
-                        {
-                            var returnValueArgument = genericArgumentTypes.Last();
-
-                            if (method.IsAsync)
-                            {
-                                if (returnValueArgument.IsGenericType == false || returnValueArgument.GetGenericTypeDefinition() != typeof(Task<>))
-                                {
-                                    return false;
-                                }
-                            }
-                            else if (returnValueArgument != method.ReturnType && returnValueArgument.IsGenericParameter == false)
+                            if (parameter == null)
                             {
                                 return false;
                             }
 
-                            delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 2];
-                        }
-                        else
-                        {
-                            if (method.IsAsync)
+                            var parameterType = parameter.Parameter.ParameterType;
+                            var genericArgumentTypes = parameterType.GetGenericArguments();
+
+                            Type delegateInterfaceType = null;
+
+                            if (method.HasReturnValue)
                             {
-                                if (method.ReturnType != typeof(Task))
+                                var returnValueArgument = genericArgumentTypes.Last();
+
+                                if (method.IsAsync)
+                                {
+                                    if (returnValueArgument.IsGenericType == false || returnValueArgument.GetGenericTypeDefinition() != typeof(Task<>))
+                                    {
+                                        return false;
+                                    }
+                                }
+                                else if (returnValueArgument != method.ReturnType && returnValueArgument.IsGenericParameter == false)
                                 {
                                     return false;
                                 }
@@ -341,34 +320,45 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                             }
                             else
                             {
-                                if (method.ReturnType != typeof(void))
+                                if (method.IsAsync)
                                 {
-                                    return false;
+                                    if (method.ReturnType != typeof(Task))
+                                    {
+                                        return false;
+                                    }
+
+                                    delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 2];
                                 }
+                                else
+                                {
+                                    if (method.ReturnType != typeof(void))
+                                    {
+                                        return false;
+                                    }
 
-                                delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 1];
+                                    delegateInterfaceType = genericArgumentTypes[genericArgumentTypes.Length - 1];
+                                }
                             }
-                        }
 
-                        if (delegateInterfaceType != method.InterfaceType)
+                            if (delegateInterfaceType != method.InterfaceType)
+                            {
+                                return false;
+                            }
+
+                            return true;
+                        })
+                .Where(
+                    method =>
                         {
-                            return false;
-                        }
+                            if (method.HasParameters)
+                            {
+                                return method.Parameters.Count(p => p.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure) == 1;
+                            }
 
-                        return true;
-                    })
-                .Where(method =>
-                    {
-                        if (method.HasParameters == true)
-                        {
-                            return method.Parameters.Count(
-                                    p => p.ProxyMethodParameterType == ProxyMethodParameterType.ParametersClosure) == 1;
-                        }
-
-                        return method.Parameters.All(
-                            p => p.ProxyMethodParameterType != ProxyMethodParameterType.ParametersClosure);
-                    })
-                .OrderByDescending(method => method.Parameters.Length).Select(method => method.Method);
+                            return method.Parameters.All(p => p.ProxyMethodParameterType != ProxyMethodParameterType.ParametersClosure);
+                        })
+                .OrderByDescending(method => method.Parameters.Length)
+                .Select(method => method.Method);
 
             var proxyMethod = proxyMethods.FirstOrDefault();
 
@@ -410,10 +400,17 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             return new CreateMethodFuncResult<MethodContext>(
                 methodData,
                 new MethodContext
-                {
-                    ClosureFinalType = finalClosureType,
-                    FinalDelegateMethodInfo = finalDelegateMethod
-                });
+                    {
+                        ClosureFinalType = finalClosureType,
+                        FinalDelegateMethodInfo = finalDelegateMethod
+                    });
+        }
+
+        private struct GetProxyMethodInfoParameter
+        {
+            public ParameterInfo Parameter { get; set; }
+
+            public ProxyMethodParameterTypeAttribute ProxyMethodParameterTypeAttribute { get; set; }
         }
 
         public class MethodContext : BaseMethodContext
@@ -425,6 +422,17 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
         public class TypeContext : BaseTypeContext<TypeContext, MethodContext>
         {
+        }
+
+        private class GetProxyMethodInfo
+        {
+            public bool HasParameters { get; set; }
+
+            public bool IsAsync { get; set; }
+
+            public MethodInfo MethodInfo { get; set; }
+
+            public GetProxyMethodInfoParameter[] Parameters { get; set; }
         }
     }
 }

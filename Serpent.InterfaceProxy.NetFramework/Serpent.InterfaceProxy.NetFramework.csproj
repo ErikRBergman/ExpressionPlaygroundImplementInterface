@@ -71,6 +71,7 @@
     <Compile Include="Implementations\ProxyTypeBuilder\ProxyMethodParameterTypeAttribute.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\MethodInfoExtensions.cs" />
     <Compile Include="Implementations\ProxyTypeBuilder\BaseMethodProxyWithMethodNames.cs" />
+    <Compile Include="Implementations\ProxyTypeBuilder\ProxyBuilder.cs" />
     <Compile Include="ImplementInterfaceMethodResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Implementations\ModifiedProxyTypeBuilder\ModifiedProxyTypeBuilder.cs" />

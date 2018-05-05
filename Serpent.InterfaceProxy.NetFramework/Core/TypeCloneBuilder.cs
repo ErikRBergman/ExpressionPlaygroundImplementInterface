@@ -1,6 +1,6 @@
 ﻿// ReSharper disable StyleCop.SA1402
 
-namespace Serpent.InterfaceProxy
+namespace Serpent.InterfaceProxy.Core
 {
     using System;
     using System.Collections.Generic;
@@ -181,14 +181,14 @@ namespace Serpent.InterfaceProxy
                     typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
 
                 var createMethodData = new CreateMethodData
-                {
-                    SourceMethodInfo = sourceMethod,
-                    TypeBuilder = typeContext.TypeBuilder,
-                    SourceType = typeContext.SourceType,
-                    GenericArguments = genericArguments,
-                    GenericArgumentNames = genericArgumentNames,
-                    Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
-                };
+                                           {
+                                               SourceMethodInfo = sourceMethod,
+                                               TypeBuilder = typeContext.TypeBuilder,
+                                               SourceType = typeContext.SourceType,
+                                               GenericArguments = genericArguments,
+                                               GenericArgumentNames = genericArgumentNames,
+                                               Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
+                                           };
 
                 var createMethodContext = createMethodContextFunc(createMethodData, typeContext);
 
@@ -211,12 +211,12 @@ namespace Serpent.InterfaceProxy
             foreach (var interfaceType in interfaces)
             {
                 var typeContext = new TTypeContext
-                {
-                    SourceType = interfaceType,
-                    TypeBuilder = typeBuilder,
-                    Parameters = parameters,
-                    ParentType = parentType
-                };
+                                      {
+                                          SourceType = interfaceType,
+                                          TypeBuilder = typeBuilder,
+                                          Parameters = parameters,
+                                          ParentType = parentType
+                                      };
 
                 var methodNames = this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed);
 

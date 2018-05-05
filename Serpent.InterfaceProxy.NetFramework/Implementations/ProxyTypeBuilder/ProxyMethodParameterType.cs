@@ -3,7 +3,7 @@
     public enum ProxyMethodParameterType
     {
         /// <summary>
-        /// Auto detect is currently ignored
+        ///     Auto detect is currently ignored
         /// </summary>
         Unknown = 0,
 
@@ -13,11 +13,10 @@
 
         MethodName = 10000,
 
-        TypeName = 11000,
-
+        TypeName = 11000
 
         // MethodCallContext = 11000
 
-        //        MethodInfo = 11000
+        // MethodInfo = 11000
     }
 }

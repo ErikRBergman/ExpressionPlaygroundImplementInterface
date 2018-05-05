@@ -1,4 +1,5 @@
 ﻿// ReSharper disable StyleCop.SA1400
+
 namespace Serpent.InterfaceProxy.Extensions
 {
     using System;

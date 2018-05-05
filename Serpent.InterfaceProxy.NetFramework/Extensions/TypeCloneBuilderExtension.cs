@@ -1,11 +1,14 @@
 ﻿namespace Serpent.InterfaceProxy.Extensions
 {
     using System;
-    using System.Linq;
+
+    using Serpent.InterfaceProxy.Core;
 
     public static class TypeCloneBuilderExtension
     {
-        public static GenerateTypeResult GenerateType<TTypeContext, TMethodContext>(this TypeCloneBuilder<TTypeContext, TMethodContext> proxyTypeBuilder, Action<TypeCloneBuilderParameters<TTypeContext, TMethodContext>> parametersFunc)
+        public static GenerateTypeResult GenerateType<TTypeContext, TMethodContext>(
+            this TypeCloneBuilder<TTypeContext, TMethodContext> proxyTypeBuilder,
+            Action<TypeCloneBuilderParameters<TTypeContext, TMethodContext>> parametersFunc)
             where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>, new()
             where TMethodContext : BaseMethodContext, new()
         {
@@ -13,6 +16,5 @@
             parametersFunc(parameters);
             return proxyTypeBuilder.GenerateType(parameters);
         }
-
     }
 }

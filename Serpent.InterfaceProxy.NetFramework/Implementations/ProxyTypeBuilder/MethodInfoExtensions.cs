@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
+﻿namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 {
+    using System.Collections.Generic;
     using System.Reflection;
 
     /// <summary>
-    /// Provides type extensions for the Proxy Type Builder
+    ///     Provides type extensions for the Proxy Type Builder
     /// </summary>
     public static class MethodInfoExtensions
     {
@@ -21,7 +16,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             {
                 var attribute = parameter.GetCustomAttribute<ProxyMethodParameterTypeAttribute>(true);
 
-                ProxyMethodParameterType parameterType = ProxyMethodParameterType.Unknown;
+                var parameterType = ProxyMethodParameterType.Unknown;
 
                 if (attribute != null)
                 {
@@ -37,15 +32,14 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
     public class ProxyMethodParameter
     {
-        public ParameterInfo ParameterInfo { get; }
-
-        public ProxyMethodParameterType ProxyMethodParameterType { get; }
-
         public ProxyMethodParameter(ParameterInfo parameterInfo, ProxyMethodParameterType proxyMethodParameterType)
         {
             this.ParameterInfo = parameterInfo;
             this.ProxyMethodParameterType = proxyMethodParameterType;
         }
 
+        public ParameterInfo ParameterInfo { get; }
+
+        public ProxyMethodParameterType ProxyMethodParameterType { get; }
     }
 }

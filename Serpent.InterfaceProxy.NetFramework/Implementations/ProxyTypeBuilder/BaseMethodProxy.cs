@@ -5,21 +5,19 @@
 
     public class BaseMethodProxy<TInterface>
     {
-        private readonly TInterface inner;
-
         public BaseMethodProxy(TInterface inner)
         {
-            this.inner = inner;
+            this.InnerReference = inner;
         }
 
-        protected TInterface InnerReference => this.inner;
+        protected TInterface InnerReference { get; }
 
         [ProxyMethod]
         protected virtual void Execute(
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Action<TInterface> action)
         {
-            action(this.inner);
+            action(this.InnerReference);
         }
 
         [ProxyMethod]
@@ -27,7 +25,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TInterface, TResult> func)
         {
-            return func(this.inner);
+            return func(this.InnerReference);
         }
 
         [ProxyMethod]
@@ -37,7 +35,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Action<TParameter, TInterface> action)
         {
-            action(parameter, this.inner);
+            action(parameter, this.InnerReference);
         }
 
         [ProxyMethod]
@@ -47,7 +45,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TParameter, TInterface, TResult> func)
         {
-            return func(parameter, this.inner);
+            return func(parameter, this.InnerReference);
         }
 
         [ProxyMethod]
@@ -55,7 +53,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TInterface, Task> func)
         {
-            return func(this.inner);
+            return func(this.InnerReference);
         }
 
         [ProxyMethod]
@@ -63,7 +61,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TInterface, Task<TResult>> func)
         {
-            return func(this.inner);
+            return func(this.InnerReference);
         }
 
         [ProxyMethod]
@@ -73,7 +71,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TParameter, TInterface, Task> func)
         {
-            return func(parameter, this.inner);
+            return func(parameter, this.InnerReference);
         }
 
         [ProxyMethod]
@@ -83,7 +81,7 @@
             [ProxyMethodParameterType(ProxyMethodParameterType.MethodDelegate)]
             Func<TParameter, TInterface, Task<TResult>> func)
         {
-            return func(parameter, this.inner);
+            return func(parameter, this.InnerReference);
         }
     }
 }

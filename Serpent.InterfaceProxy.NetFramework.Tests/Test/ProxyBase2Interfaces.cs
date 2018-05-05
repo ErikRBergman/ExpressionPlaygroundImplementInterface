@@ -6,6 +6,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
 
     using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
@@ -13,6 +14,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
     public interface IInterface1
     {
         Task<string> Method1Async(string prefix);
+
+        Task<string> WithDefault(CancellationToken token = default(CancellationToken));
     }
 
     public interface IInterface2
@@ -28,6 +31,11 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         {
             this.LastPrefix = prefix;
             return prefix + nameof(this.Method1Async);
+        }
+
+        public async Task<string> WithDefault(CancellationToken token = default(CancellationToken))
+        {
+            return null;
         }
     }
 

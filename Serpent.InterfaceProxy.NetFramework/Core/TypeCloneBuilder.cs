@@ -144,7 +144,7 @@ namespace Serpent.InterfaceProxy.Core
                     builder.SetCustomAttribute(attributeBuilder);
                 }
 
-                if (parameters[i].Attributes.HasFlag(ParameterAttributes.HasDefault))
+                if (parameters[i].Attributes.HasFlag(ParameterAttributes.HasDefault) && parameters[i].DefaultValue != null)
                 {
                     builder.SetConstant(parameters[i].DefaultValue);
                 }

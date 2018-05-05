@@ -5,6 +5,14 @@
     using System.Reflection;
     using System.Reflection.Emit;
 
+    using Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder;
+
+    public class TypeCloneBuilderParameters : TypeCloneBuilderParameters<ProxyTypeBuilder.TypeContext, ProxyTypeBuilder.MethodContext>
+    {
+        public static new TypeCloneBuilderParameters New => new TypeCloneBuilderParameters();
+
+    }
+
     public class TypeCloneBuilderParameters<TTypeContext, TMethodContext>
         where TTypeContext : BaseTypeContext<TTypeContext, TMethodContext>
         where TMethodContext : BaseMethodContext

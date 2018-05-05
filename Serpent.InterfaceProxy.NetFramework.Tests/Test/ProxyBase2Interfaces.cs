@@ -18,9 +18,15 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         Task<string> WithDefault(CancellationToken token = default(CancellationToken));
     }
 
-    public interface IInterface2
+    public interface IInterface3
+    {
+        Task<IEnumerable<Guid>> ListCommandsAsync();
+    }
+
+    public interface IInterface2 : IInterface3
     {
         Task<string> Method2Async(string prefix);
+
     }
 
     public class Class1 : IInterface1
@@ -47,6 +53,11 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests.Test
         {
             this.LastPrefix = prefix;
             return prefix + nameof(this.Method2Async);
+        }
+
+        public Task<IEnumerable<Guid>> ListCommandsAsync()
+        {
+            return Task.FromResult<IEnumerable<Guid>>(null);
         }
     }
 

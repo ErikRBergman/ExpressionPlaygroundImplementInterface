@@ -227,7 +227,7 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
         }
 
         [TestMethod]
-        public async Task Proxy_With_Multple_Interfaces_Async()
+        public async Task Proxy_With_Multiple_Interfaces_Async()
         {
             var proxyResult = CreateProxyTypeWith2Interfaces();
 
@@ -242,6 +242,8 @@ namespace Serpent.InterfaceProxy.NetFramework.Tests
 
             await i1.Method1Async("I1");
             await i2.Method2Async("I2");
+
+            await i2.ListCommandsAsync();
 
             Assert.AreEqual("I1", c1.LastPrefix);
             Assert.AreEqual("I2", c2.LastPrefix);

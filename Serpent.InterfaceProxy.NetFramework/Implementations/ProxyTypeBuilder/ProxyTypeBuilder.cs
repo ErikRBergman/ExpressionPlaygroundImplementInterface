@@ -220,6 +220,35 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             return delegateMethodBuilder.MakeGenericMethodIfNecessary(genericArguments);
         }
 
+        private class GetProxyMethodCandidateParameter
+        {
+            public ParameterInfo Parameter { get; set; }
+
+            public ProxyMethodParameterType ProxyMethodParameterType { get; set; }
+        }
+
+        private class GetProxyMethodCandidate
+        {
+            public MethodInfo Method { get; set; }
+
+            public bool IsAsync { get; set; }
+
+            public bool HasParameters { get; set; }
+
+            public bool HasReturnValue { get; set; }
+
+            public Type ReturnType { get; set; }
+
+            public Type InterfaceType { get; set; }
+
+            public GetProxyMethodCandidateParameter[] Parameters { get; set; }
+
+            public bool HasExactInterfaceMatch { get; set; }
+
+            public int Score => this.HasExactInterfaceMatch ? 1 : 0;
+        }
+
+
         private static MethodInfo GetProxyMethod(
             Type finalClosureType,
             Type parentType,
@@ -260,13 +289,13 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
             var minimumParameterCount = 1 + (hasParameters ? 1 : 0);
 
-            proxyMethods = proxyMethods.Select(
+            var proxyMethodCandidates = proxyMethods.Select(
                     m =>
                         {
                             var parameters = m.GetParameters();
 
-                            return new
-                                       {
+                            return new GetProxyMethodCandidate
+                            {
                                            Method = m,
                                            IsAsync = isAsyncMethod,
                                            HasParameters = hasParameters,
@@ -274,8 +303,8 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                                            ReturnType = returnType,
                                            InterfaceType = interfaceType,
                                            Parameters = parameters.Select(
-                                                   p => new
-                                                            {
+                                                   p => new GetProxyMethodCandidateParameter
+                                                   {
                                                                 Parameter = p,
                                                                 ProxyMethodParameterType =
                                                                     p.GetCustomAttribute<ProxyMethodParameterTypeAttribute>()?.ParameterType ?? ProxyMethodParameterType.Unknown
@@ -283,7 +312,7 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
                                                .ToArray()
                                        };
                         })
-                .Where(method => method.Parameters.Length >= minimumParameterCount)
+                .Where(candidate => candidate.Parameters.Length >= minimumParameterCount)
                 .Where(
                     method =>
                         {
@@ -342,7 +371,14 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
                             if (delegateInterfaceType != method.InterfaceType)
                             {
-                                return false;
+                                if (delegateInterfaceType.Is(method.InterfaceType))
+                                {
+                                    method.HasExactInterfaceMatch = false;
+                                }
+                                else
+                                {
+                                    return false;
+                                }
                             }
 
                             return true;
@@ -357,10 +393,11 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
 
                             return method.Parameters.All(p => p.ProxyMethodParameterType != ProxyMethodParameterType.ParametersClosure);
                         })
-                .OrderByDescending(method => method.Parameters.Length)
-                .Select(method => method.Method);
+                .OrderByDescending(candidate => candidate.Score)
+                .ThenByDescending(candidate => candidate.Parameters.Length)
+                .Select(candidate => candidate.Method);
 
-            var proxyMethod = proxyMethods.FirstOrDefault();
+            var proxyMethod = proxyMethodCandidates.FirstOrDefault();
 
             if (proxyMethod == null)
             {

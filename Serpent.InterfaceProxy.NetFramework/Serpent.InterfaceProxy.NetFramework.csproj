@@ -46,7 +46,7 @@
   <ItemGroup>
     <Compile Include="BaseMethodContext.cs" />
     <Compile Include="BaseTypeContext.cs" />
-    <Compile Include="CreateMethodData.cs" />
+    <Compile Include="InterfaceProxyMethodInformation.cs" />
     <Compile Include="CreateMethodFuncResult.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\TypeCloneBuilderExtension.cs" />

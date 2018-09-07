@@ -418,24 +418,25 @@ namespace Serpent.InterfaceProxy.Implementations.ProxyTypeBuilder
             return ClosureBuilder.CreateClosureTypeBuilder(moduleBuilder, closureTypeName);
         }
 
-        private CreateMethodFuncResult<MethodContext> CreateMethodContextData(CreateMethodData methodData, TypeContext typeContext)
+        private CreateMethodFuncResult<MethodContext> CreateMethodContextData(InterfaceProxyMethodInformation methodInformation, TypeContext typeContext)
         {
             var finalClosureType = GetFinalClosureType(
-                methodData.SourceType,
+                methodInformation.SourceType,
                 this.CreateClosureTypeFunc,
                 typeContext.Parameters.ModuleBuilder,
-                methodData.SourceMethodInfo.GetParameters(),
-                methodData.SourceMethodInfo,
-                methodData.GenericArguments);
+                methodInformation.SourceMethodInfo.GetParameters(),
+                methodInformation.SourceMethodInfo,
+                methodInformation.GenericArguments);
+
             var finalDelegateMethod = GetFinalDelegateMethod(
-                methodData.TypeBuilder,
-                methodData.SourceType,
-                methodData.SourceMethodInfo,
+                methodInformation.TypeBuilder,
+                methodInformation.SourceType,
+                methodInformation.SourceMethodInfo,
                 finalClosureType,
-                methodData.GenericArguments);
+                methodInformation.GenericArguments);
 
             return new CreateMethodFuncResult<MethodContext>(
-                methodData,
+                methodInformation,
                 new MethodContext
                     {
                         ClosureFinalType = finalClosureType,

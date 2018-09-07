@@ -2,13 +2,13 @@
 {
     public struct CreateMethodFuncResult<TMethodContext>
     {
-        public CreateMethodFuncResult(CreateMethodData createMethodData, TMethodContext methodContext)
+        public CreateMethodFuncResult(InterfaceProxyMethodInformation interfaceProxyMethodInformation, TMethodContext methodContext)
         {
-            this.CreateMethodData = createMethodData;
+            this.InterfaceProxyMethodInformation = interfaceProxyMethodInformation;
             this.MethodContext = methodContext;
         }
 
-        public CreateMethodData CreateMethodData { get; set; }
+        public InterfaceProxyMethodInformation InterfaceProxyMethodInformation { get; set; }
 
         public TMethodContext MethodContext { get; set; }
     }

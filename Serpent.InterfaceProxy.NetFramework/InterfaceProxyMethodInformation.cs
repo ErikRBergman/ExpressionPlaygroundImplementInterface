@@ -7,7 +7,7 @@
 
     using Serpent.InterfaceProxy.Core;
 
-    public struct CreateMethodData
+    public struct InterfaceProxyMethodInformation
     {
         public string[] GenericArgumentNames { get; set; }
 

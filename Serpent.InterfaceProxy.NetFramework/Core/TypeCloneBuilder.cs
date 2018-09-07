@@ -70,20 +70,21 @@ namespace Serpent.InterfaceProxy.Core
         {
         }
 
-        private static MethodBuilder CreateMethod(TTypeContext typeContext, CreateMethodFuncResult<TMethodContext> createMethodContext)
+        private static MethodBuilder CreateInterfaceProxyMethod(TTypeContext typeContext, CreateMethodFuncResult<TMethodContext> createMethodContext)
         {
             var typeBuilder = typeContext.TypeBuilder;
+            var sourceMethodInfo = createMethodContext.InterfaceProxyMethodInformation.SourceMethodInfo;
 
-            var sourceMethodInfo = createMethodContext.CreateMethodData.SourceMethodInfo;
-
+            // Create method
             var interfaceImplementationMethodBuilder = typeBuilder.DefineMethod(
                 sourceMethodInfo.Name,
                 typeContext.Parameters.MethodAttributes,
                 sourceMethodInfo.ReturnType,
-                createMethodContext.CreateMethodData.Parameters.Select(pi => pi.ParameterType).ToArray());
+                createMethodContext.InterfaceProxyMethodInformation.Parameters.Select(pi => pi.ParameterType).ToArray());
 
-            var genericArguments = createMethodContext.CreateMethodData.GenericArguments;
-            var genericArgumentNames = createMethodContext.CreateMethodData.GenericArgumentNames;
+            // Handle generic arguments
+            var genericArguments = createMethodContext.InterfaceProxyMethodInformation.GenericArguments;
+            var genericArgumentNames = createMethodContext.InterfaceProxyMethodInformation.GenericArgumentNames;
 
             if (genericArguments.Any())
             {
@@ -91,17 +92,22 @@ namespace Serpent.InterfaceProxy.Core
                 var substituteTypes = genericArguments.ZipToDictionaryMap(genericParameters);
 
                 var returnType = sourceMethodInfo.ReturnType;
-
                 var newReturnType = substituteTypes.GetSubstitute(returnType);
 
                 interfaceImplementationMethodBuilder.SetReturnType(newReturnType);
             }
 
-            UpdateParameterAttributes(interfaceImplementationMethodBuilder, createMethodContext.CreateMethodData.Parameters.ToArray());
+            // Parameter attributes
+            ReplicateMethodParameterNamesAndAttributes(interfaceImplementationMethodBuilder, createMethodContext.InterfaceProxyMethodInformation.Parameters.ToArray());
 
             return interfaceImplementationMethodBuilder;
         }
 
+        /// <summary>
+        /// Generates factories for all the type's constructors
+        /// </summary>
+        /// <param name="generatedType">The type to generate factories for</param>
+        /// <returns>The factories</returns>
         private static IEnumerable<Delegate> GenerateFactoryDelegates(Type generatedType)
         {
             var constructors = generatedType.GetConstructors();
@@ -130,7 +136,12 @@ namespace Serpent.InterfaceProxy.Core
             }
         }
 
-        private static void UpdateParameterAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
+        /// <summary>
+        /// Replicates the method parameter names and attribiutes 
+        /// </summary>
+        /// <param name="interfaceImplementationMethodBuilder"></param>
+        /// <param name="parameters"></param>
+        private static void ReplicateMethodParameterNamesAndAttributes(MethodBuilder interfaceImplementationMethodBuilder, TypeBuilderMethodParameter[] parameters)
         {
             for (var i = 0; i < parameters.Length; i++)
             {
@@ -151,7 +162,8 @@ namespace Serpent.InterfaceProxy.Core
             }
         }
 
-        private ImmutableList<string> CreateInterfaceMethods(TTypeContext typeContext, Type @interface, ImmutableList<string> usedNames)
+
+        private ImmutableList<string> CreateInterfaceProxyMethods(TTypeContext typeContext, Type @interface, ImmutableList<string> usedNames)
         {
             foreach (var sourceMethod in @interface.GetMethods())
             {
@@ -177,10 +189,7 @@ namespace Serpent.InterfaceProxy.Core
                 {
                 }
 
-                var createMethodContextFunc =
-                    typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
-
-                var createMethodData = new CreateMethodData
+                var proxyMethodInformation = new InterfaceProxyMethodInformation
                                            {
                                                SourceMethodInfo = sourceMethod,
                                                TypeBuilder = typeContext.TypeBuilder,
@@ -190,9 +199,10 @@ namespace Serpent.InterfaceProxy.Core
                                                Parameters = parameters.Select(p => new TypeBuilderMethodParameter(p))
                                            };
 
-                var createMethodContext = createMethodContextFunc(createMethodData, typeContext);
+                var createMethodContextFunc = typeContext.Parameters.CreateMethodFunc ?? ((data, context) => new CreateMethodFuncResult<TMethodContext>(data, new TMethodContext()));
+                var createMethodContext = createMethodContextFunc(proxyMethodInformation, typeContext);
 
-                var interfaceImplementationMethodBuilder = CreateMethod(typeContext, createMethodContext);
+                var interfaceImplementationMethodBuilder = CreateInterfaceProxyMethod(typeContext, createMethodContext);
 
                 this.EmitMethodImplementation(@interface, sourceMethod, interfaceImplementationMethodBuilder, createMethodContext.MethodContext, typeContext.ParentType);
             }
@@ -218,7 +228,7 @@ namespace Serpent.InterfaceProxy.Core
                                           ParentType = parentType
                                       };
 
-                var methodNames = this.CreateInterfaceMethods(typeContext, interfaceType, result.NamesUsed);
+                var methodNames = this.CreateInterfaceProxyMethods(typeContext, interfaceType, result.NamesUsed);
 
                 result = result.AddUsedNames(methodNames);
 

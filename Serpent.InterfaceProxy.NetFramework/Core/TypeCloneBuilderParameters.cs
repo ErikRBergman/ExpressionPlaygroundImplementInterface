@@ -18,7 +18,7 @@
     {
         public static TypeCloneBuilderParameters<TTypeContext, TMethodContext> New => new TypeCloneBuilderParameters<TTypeContext, TMethodContext>();
 
-        public Func<CreateMethodData, TTypeContext, CreateMethodFuncResult<TMethodContext>> CreateMethodFunc { get; set; }
+        public Func<InterfaceProxyMethodInformation, TTypeContext, CreateMethodFuncResult<TMethodContext>> CreateMethodFunc { get; set; }
 
         /// <summary>
         ///     A predicate indicating whether to implement the interface the source type is implementing or not
